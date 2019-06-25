@@ -69,7 +69,7 @@ else
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-//aa.env.setValue("ModuleName", "EnvHealth");
+aa.env.setValue("ModuleName", "ALL");
 //aa.env.setValue("BatchJobID", "ALL");
 
 /* test parameters 
@@ -96,6 +96,7 @@ aa.env.setValue("sendEmailNotifications","N");
 aa.env.setValue("reportName", "");
 aa.env.setValue("taskToAssign", "");
 aa.env.setValue("assignTaskTo", "");
+aa.env.setValue("setParentWorkflowTaskAndStatus", "");
 aa.env.setValue("setParentWorkflowTaskAndStatus", "");
 aa.env.setValue("respectNotifyPrefs", "Y");
 
@@ -191,7 +192,7 @@ try {
 				newAppStatus = ""+thisJob["New Application Status"]; //   update the CAP to this status
 				setPrefix = ""+thisJob["Set Prefix"];
 				gracePeriodDays = ""+thisJob["Grace Period Days"]; //	bump up expiration date by this many days
-				inspSched = ""+thisJob["Inspection to Schedule"]; //   Schedule Inspection
+				arrInspSched = ""+thisJob["Inspection to Schedule"].split("|"); //   Schedule Inspection
 				skipAppStatusArray = ""+thisJob["Skip Application Statuses"]; //   Skip records with one of these application statuses
 				skipAppStatusArray = skipAppStatusArray.split(","); //   Skip records with one of these application statuses
 				emailAddress = ""+thisJob["Send Batch Logs To"]; // email to send report
@@ -488,16 +489,18 @@ try{
             updateAppStatus(newAppStatus, "");
 		}
 		// schedule Inspection
-		if (inspSched.length > 0) {
-			//lwacht: this check is specific to EnvHealth and should be removed for other implementations
-			if(getAppSpecific("Non Profit")!="CHECKED" && appType.indexOf("School")<0){
-				//lwacht: end custom solution
-				scheduleInspection(inspSched, "1");
-				inspId = getScheduledInspId(inspSched);
-				if (inspId) {
-					autoAssignInspection(inspId);
+		if (arrInspSched.length > 0) {
+			for (i in arrInspSched) {
+				if(isNaN(arrInspSched[1])){
+					comment("The value after the comma ("+arrInspSched[1]+") need to be a number. Not scheduling " +arrInspSched[0]);
+				}else{
+					scheduleInspection(arrInspSched[0], arrInspSched[1]);
+					inspId = getScheduledInspId(inspSched);
+					if (inspId) {
+						autoAssignInspection(inspId);
+					}
+					logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
 				}
-				logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
 			}
 		}
 		if (createNotifySets && setPrefix != "") {
