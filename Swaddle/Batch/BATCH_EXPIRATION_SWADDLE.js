@@ -69,7 +69,7 @@ else
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-aa.env.setValue("ModuleName", "ALL");
+//aa.env.setValue("ModuleName", "EnvHealth");
 //aa.env.setValue("BatchJobID", "ALL");
 
 /* test parameters 
@@ -96,7 +96,6 @@ aa.env.setValue("sendEmailNotifications","N");
 aa.env.setValue("reportName", "");
 aa.env.setValue("taskToAssign", "");
 aa.env.setValue("assignTaskTo", "");
-aa.env.setValue("setParentWorkflowTaskAndStatus", "");
 aa.env.setValue("setParentWorkflowTaskAndStatus", "");
 aa.env.setValue("respectNotifyPrefs", "Y");
 
@@ -192,7 +191,7 @@ try {
 				newAppStatus = ""+thisJob["New Application Status"]; //   update the CAP to this status
 				setPrefix = ""+thisJob["Set Prefix"];
 				gracePeriodDays = ""+thisJob["Grace Period Days"]; //	bump up expiration date by this many days
-				arrInspSched = ""+thisJob["Inspection to Schedule"].split("|"); //   Schedule Inspection
+				inspSched = ""+thisJob["Inspection to Schedule"]; //   Schedule Inspection
 				skipAppStatusArray = ""+thisJob["Skip Application Statuses"]; //   Skip records with one of these application statuses
 				skipAppStatusArray = skipAppStatusArray.split(","); //   Skip records with one of these application statuses
 				emailAddress = ""+thisJob["Send Batch Logs To"]; // email to send report
@@ -256,7 +255,8 @@ try {
 function findRecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
-	var modName = getJobParam("ModuleName"); 
+	//var modName = getJobParam("ModuleName"); 
+var modName = "ALL";
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", modName);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -410,6 +410,7 @@ try{
 			var sendPrimaryContact = conTypeArray.indexOf("PRIMARY") >= 0 || conTypeArray.indexOf("Primary") >= 0 || conTypeArray.indexOf("primary") >= 0;
 			// create an array of contactObjs
 			var conArray = [];
+
 			var capContactResult = aa.people.getCapContactByCapID(capId);
 			if (capContactResult.getSuccess()) {
 				var capContactArray = capContactResult.getOutput();
@@ -417,6 +418,7 @@ try{
 			if (capContactArray) {
 				for (var yy in capContactArray) {
 					conArray.push(new contactObj(capContactArray[yy]));
+
 				}
 			}
 			// filter based on business rules in params
@@ -437,7 +439,7 @@ try{
 				}
 			}
 			// process each qualified contact
-			logDebug("sendArray: " + sendArray.length);
+			aa.print("sendArray: " + sendArray.length);
 			for (var i in sendArray) {
 				//  create set  
 				var channel = ("" + lookup("CONTACT_PREFERRED_CHANNEL","" + sendArray[i].capContact.getPreferredChannel())).toUpperCase();
@@ -454,13 +456,33 @@ try{
 						//runReportAttach(capId,rptName, "altId", capId.getCustomID()); 
 						var eParams = aa.util.newHashtable(); 
 						//add email template notifications params here
+						
+						//added code to get location information
+						var fcapAddressObj = null;
+						var capAddResult = aa.address.getAddressByCapId(capId);
+						if (capAddResult.getSuccess())
+						{
+						  var fcapAddressObj = capAddResult.getOutput();
+				    	       for(I in fcapAddressObj)
+					      var location = fcapAddressObj[I];
+						}
+						
+						else
+                        var location = "";
+                        
+						//Added code to get Record Alias
+						
+						var recordCap = aa.cap.getCap(capId).getOutput();
+						var capAlias = recordCap.getCapType().getAlias();
+						
 						addParameter(eParams, "$$fileDateYYYYMMDD$$", fileDateYYYYMMDD);
 						addParameter(eParams, "$$altID$$", capId.getCustomID());
 						addParameter(eParams, "$$capID$$", capId.getCustomID());
-						addParameter(eParams, "$$capType$$", appTypeString);
+						addParameter(eParams, "$$capType$$", capAlias);
 						addParameter(eParams, "$$expirationDate$$", expDate);
 						addParameter(eParams, "$$contactFirstName$$", cFName);
 						addParameter(eParams, "$$contactFirstName$$", cLName);
+						addParameter(eParams, "$$location$$", location);
 						var rFiles = [];
 						if(!matches(rptName, null, "", "undefined")){
 							var rFile;
@@ -489,18 +511,16 @@ try{
             updateAppStatus(newAppStatus, "");
 		}
 		// schedule Inspection
-		if (arrInspSched.length > 0) {
-			for (i in arrInspSched) {
-				if(isNaN(arrInspSched[1])){
-					comment("The value after the comma ("+arrInspSched[1]+") need to be a number. Not scheduling " +arrInspSched[0]);
-				}else{
-					scheduleInspection(arrInspSched[0], arrInspSched[1]);
-					inspId = getScheduledInspId(inspSched);
-					if (inspId) {
-						autoAssignInspection(inspId);
-					}
-					logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
+		if (inspSched.length > 0) {
+			//lwacht: this check is specific to EnvHealth and should be removed for other implementations
+			if(getAppSpecific("Non Profit")!="CHECKED" && appType.indexOf("School")<0){
+				//lwacht: end custom solution
+				scheduleInspection(inspSched, "1");
+				inspId = getScheduledInspId(inspSched);
+				if (inspId) {
+					autoAssignInspection(inspId);
 				}
+				logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
 			}
 		}
 		if (createNotifySets && setPrefix != "") {
