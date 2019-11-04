@@ -552,7 +552,7 @@ try{
 						var feeQty = ""+sepRules[row]["Fee Quantity"];
 						if(isNaN(feeQty)){
 							if(feeQty.indexOf("AInfo")<0 && feeQty.indexOf("estValue")<0  ){
-								var fqty = parseFloat([feeQty]);
+								var fqty = eval("AInfo['"+feeQty+"']");
 							}else{
 								var fqty = eval(feeQty);
 								logDebug("fqty: " + fqty);
@@ -1097,8 +1097,8 @@ try{
 }}
 
 //copy of copyAppSpecific and copyASITables except optional param is include not ignore
-function copyAppSpecificInclude(newCap) // copy all App Specific info into new Cap, 1 optional parameter for ignoreArr
-{
+function copyAppSpecificInclude(newCap){ // copy all App Specific info into new Cap, 1 optional parameter for ignoreArr
+try{
 	var includeArr = new Array();
 	var limitCopy = false;
 	if (arguments.length > 1) 
@@ -1121,12 +1121,15 @@ function copyAppSpecificInclude(newCap) // copy all App Specific info into new C
 		}
 		editAppSpecific(asi,AInfo[asi],newCap);
 	}
-}
+}catch(err){
+	logDebug("A JavaScript Error occurred: copyAppSpecificInclude:  " + err.message);
+	logDebug(err.stack)
+}}
 
 
 
 function copyASITablesInclude(pFromCapId, pToCapId) {
-	// par3 is optional 0 based string array of table to include
+try{	// par3 is optional 0 based string array of table to include
 	var itemCap = pFromCapId;
 
 	var gm = aa.appSpecificTableScript.getAppSpecificTableGroupModel(itemCap).getOutput();
@@ -1191,5 +1194,18 @@ function copyASITablesInclude(pFromCapId, pToCapId) {
 		addASITable(tn, tempArray, pToCapId);
 		logDebug("ASI Table Array : " + tn + " (" + numrows + " Rows)");
 	}
-} 
+} catch(err){
+	logDebug("A JavaScript Error occurred: copyASITablesInclude:  " + err.message);
+	logDebug(err.stack)
+}}
+
+function sepRunBackup(emailAddr){
+try{
+	
+}catch(err){
+	logDebug("A JavaScript Error occurred: sepRunBackup:  " + err.message);
+	logDebug(err.stack)
+}}
+
+
 //INCLUDES_SEP_CUSTOM END
