@@ -624,7 +624,7 @@ try{
 								feeSeq = null;
 							}
 							updateFeeItemInvoiceFlag(feeSeq, finvoice);
-							return feeSeq;
+							//return feeSeq;
 					}
 				}
 			}
