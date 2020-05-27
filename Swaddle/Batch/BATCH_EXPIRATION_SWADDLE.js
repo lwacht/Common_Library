@@ -12,7 +12,7 @@
 | START: USER CONFIGURABLE PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-var emailText = "";
+var emailText = "";   
 var errLog = "";
 var debugText = "";
 var showDebug = false;	
