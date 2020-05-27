@@ -254,7 +254,7 @@ try{
 				if(pendOrSched.toUpperCase()=="PENDING"){
 					createPendingInspection(insGroup,insType);
 				}else{
-					if(calWkgDay=="Working"){
+					if(calWkgDay.toUpperCase()=="WORKING"){
 						var dtSched = dateAdd(sysDate,daysAhead,true);
 					}else{
 						var dtSched = dateAdd(sysDate,daysAhead);
@@ -275,6 +275,160 @@ try{
 	}
 }catch(err){
 	logDebug("An error occurred in sepSchedInspectionAppSub: " + err.message);
+	logDebug(err.stack);
+}}
+
+function sepSchedInspectionWkfl(recdType, taskName, taskStatus, insGroup, insType, pendSched, asiField, asiValue, monthDays, whenSched, calWkgDay, inspectorId, addtlQuery) {
+try{
+	var appMatch = true;
+	var recdTypeArr = "" + recdType
+	var arrAppType = recdTypeArr.split("/");
+	if (arrAppType.length != 4){
+		logDebug("The record type is incorrectly formatted: " + recdType);
+		return false;
+	}else{
+		for (xx in arrAppType){
+			if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+				appMatch = false;
+			}
+		}
+	}
+	if (appMatch && (!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus)){
+		var chkFilter = ""+addtlQuery;
+		logDebug("Additional Query field: " + addtlQuery);
+		if (chkFilter.length==0 ||eval(chkFilter) ) {
+			var cFld = ""+asiField;
+			var custFld = cFld.trim();
+			var cVal = ""+asiValue;
+			var custVal = cVal.trim();
+			if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
+				var pendOrSched = ""+pendSched;
+				if(pendOrSched.toUpperCase()=="PENDING"){
+					createPendingInspection(insGroup,insType);
+				}else{
+					if(monthDays.toUpperCase()=="MONTH"){
+						var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+					}else{
+						if(calWkgDay.toUpperCase()=="WORKING"){
+							var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+						}else{
+							var dtSched = dateAdd(sysDate,parseInt(whenSched));
+						}
+					}
+					scheduleInspectDate(insType,dtSched);
+					if(!matches(inspectorId,"",null,"undefined")){
+						var inspId = getScheduledInspId(insType);
+						inspId = ""+inspId;
+						if(inspectorId.toUpperCase()=="AUTO"){
+							autoAssignInspection(inspId);
+						}else{
+							if(inspectorId.toUpperCase()=="PRIOR"){
+								var lastInspid = ""+getLastInspector(insType);
+								if(lastInspid!=null){
+									assignInspection(inspId, lastInspid);
+								}else{
+									assignInspection(inspId, inspectorId);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("An error occurred in sepSchedInspectionWkfl: " + err.message);
+	logDebug(err.stack);
+}}
+
+function sepReSchedInspection(recdType, insGroup, insType, inspResult, pendSched, asiField, asiValue, monthDays, whenSched, calWkgDay, insNewGroup, insNewType, inspectorId, asiDateName, chklstDateName, chklstDateItem, chklstDateGroup, chklstDateSubGroup, chklstDateFieldName, addtlQuery) {
+try{
+	var appMatch = true;
+	var recdTypeArr = "" + recdType
+	var arrAppType = recdTypeArr.split("/");
+	if (arrAppType.length != 4){
+		logDebug("The record type is incorrectly formatted: " + recdType);
+		return false;
+	}else{
+		for (xx in arrAppType){
+			if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+				appMatch = false;
+			}
+		}
+	}
+	if (appMatch){
+		var chkFilter = ""+addtlQuery;
+		logDebug("Additional Query field: " + addtlQuery);
+		if (chkFilter.length==0 ||eval(chkFilter) ) {
+			var cFld = ""+asiField;
+			var custFld = cFld.trim();
+			var cVal = ""+asiValue;
+			var custVal = cVal.trim();
+			if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
+				var pendOrSched = ""+pendSched;
+				if(pendOrSched.toUpperCase()=="PENDING"){
+					createPendingInspection(insGroup,insType);
+				}else{
+					logDebug("calWkgDay: " + calWkgDay);
+					logDebug("monthDays: " + monthDays);
+					logDebug("whenSched: " + whenSched);
+					var cdFld = ""+asiDateName;
+					if(!matches(cdFld,"",null,"undefined")){
+						var custDtFld = cdFld.trim();
+						dtSched = AInfo[custDtFld];
+					}else{
+						var cldName = ""+chklstDateName;
+						if(!matches(cldName,"",null,"undefined")){
+							var cklDateName = cldName.trim();
+							var cldItem = ""+chklstDateItem;
+							var cklDateItem = cldItem.trim();
+							var cldGroup = ""+chklstDateGroup;
+							var cklDateGroup = cldGroup.trim();
+							var cldSGroup = ""+chklstDateSubGroup;
+							var cklDateSubGroup = cldSGroup.trim();
+							var cldField = ""+chklstDateFieldName;
+							var cklDateField = cldField.trim();
+							var dtSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
+						}else{
+							if(calWkgDay.toUpperCase()=="WORKING"){
+								if(monthDays.toUpperCase()=="MONTH"){
+									var dtSched = dateAddMonths(sysDate,whenSched,true);
+									logDebug("dtSched: " + dtSched);
+								}else{
+									var dtSched = dateAdd(sysDate,whenSched,true);
+								}
+							}else{
+								if(monthDays.toUpperCase()=="MONTH"){
+								var dtSched = dateAddMonths(sysDate,whenSched);
+								}else{
+									var dtSched = dateAdd(sysDate,whenSched);
+								}
+							}
+							scheduleInspectDate(insType,dtSched);
+							if(!matches(inspectorId,"",null,"undefined")){
+								var inspId = getScheduledInspId(insType);
+								inspId = ""+inspId;
+								if(inspectorId.toUpperCase()=="AUTO"){
+									autoAssignInspection(inspId);
+								}else{
+									if(inspectorId.toUpperCase()=="PRIOR"){
+										var lastInspid = ""+getLastInspector(insType);
+										if(lastInspid!=null){
+											assignInspection(inspId, lastInspid);
+										}else{
+											assignInspection(inspId, inspectorId);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("An error occurred in sepReSchedInspection: " + err.message);
 	logDebug(err.stack);
 }}
 
@@ -1207,5 +1361,70 @@ try{
 	logDebug(err.stack)
 }}
 
+function getGuidesheetASIValue(inspId,gName,gItem,asiGroup,asiSubGroup, asiLabel) {
+try{
+	//updates the guidesheet ID to nGuideSheetID if not currently populated
+	//optional capId
+	var itemCap = capId;
+	if (arguments > 6) itemCap = arguments[7];
+	var r = aa.inspection.getInspections(itemCap);
+	if (r.getSuccess()) {
+		var inspArray = r.getOutput();
+		for (i in inspArray) {
+			if (inspArray[i].getIdNumber() == inspId) {
+				var inspModel = inspArray[i].getInspection();
+				var gs = inspModel.getGuideSheets();
+				if (gs) {
+					for(var i=0;i< gs.size();i++) {
+						var guideSheetObj = gs.get(i);
+						if (guideSheetObj && gName.toUpperCase() == guideSheetObj.getGuideType().toUpperCase()) {
+							var guidesheetItem = guideSheetObj.getItems();
+							for(var j=0;j< guidesheetItem.size();j++) {
+								var item = guidesheetItem.get(j);
+								//1. Filter Guide Sheet items by Guide sheet item name && ASI group code
+								if(item && gItem == item.getGuideItemText() && asiGroup == item.getGuideItemASIGroupName()) {
+									var ASISubGroups = item.getItemASISubgroupList();
+									if(ASISubGroups) {
+										//2. Filter ASI sub group by ASI Sub Group name
+										for(var k=0;k< ASISubGroups.size();k++) {
+											var ASISubGroup = ASISubGroups.get(k);
+											if(ASISubGroup && ASISubGroup.getSubgroupCode() == asiSubGroup) {
+												var ASIModels =  ASISubGroup.getAsiList();
+												if(ASIModels) {
+													//3. Filter ASI by ASI name
+													for( var m = 0; m< ASIModels.size();m++) {
+														var ASIModel = ASIModels.get(m);
+														if(ASIModel && ASIModel.getAsiName() == asiLabel) {
+															//logDebug("Change ASI value from:"+ ASIModel.getAttributeValue() +" to "+newValue);
+															//4. Reset ASI value
+															//ASIModel.setAttributeValue(newValue);		
+															return ASIModel.getAttributeValue();
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}							
+						}
+					}
+				} else {
+					// if there are guidesheets
+					logDebug("No guidesheets for this inspection");
+					return false;
+				}
+			}
+		}
+	} else {
+		logDebug("No inspections on the record");
+		return false;
+	}
+	logDebug("No checklist item found.");
+	return false;
+}catch(err){
+	logDebug("A JavaScript Error occurred: getGuidesheetASIValue: " + err.message);
+	logDebug(err.stack);
+}}
 
 //INCLUDES_SEP_CUSTOM END
