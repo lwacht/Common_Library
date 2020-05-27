@@ -1228,7 +1228,8 @@ try{
 													logDebug("No notification name. No email sent.");
 												}
 												if(!matches(sepRules[row]["Inspection Group"], "",null,"undefined")){
-													var newAppStatus = ""+sepRules[row]["New App Status"];
+													var calWkgDay = ""+sepRules[row]["Inspection Group"];
+													var  = ""+sepRules[row]["Inspection Group"];
 												}
 											}
 										}
