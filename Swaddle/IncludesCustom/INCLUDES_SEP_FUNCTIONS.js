@@ -360,63 +360,62 @@ try{
 		var chkFilter = ""+addtlQuery;
 		logDebug("Additional Query field: " + addtlQuery);
 		if (chkFilter.length==0 ||eval(chkFilter) ) {
-			var cFld = ""+asiField;
-			var custFld = cFld.trim();
-			var cVal = ""+asiValue;
-			var custVal = cVal.trim();
-			if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
-				var pendOrSched = ""+pendSched;
-				if(pendOrSched.toUpperCase()=="PENDING"){
-					createPendingInspection(insGroup,insType);
-				}else{
-					logDebug("calWkgDay: " + calWkgDay);
-					logDebug("monthDays: " + monthDays);
-					logDebug("whenSched: " + whenSched);
-					var cdFld = ""+asiDateName;
-					if(!matches(cdFld,"",null,"undefined")){
-						var custDtFld = cdFld.trim();
-						dtSched = AInfo[custDtFld];
+			if(insGroup){
+				var cFld = ""+asiField;
+				var custFld = cFld.trim();
+				var cVal = ""+asiValue;
+				var custVal = cVal.trim();
+				if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
+					var pendOrSched = ""+pendSched;
+					if(pendOrSched.toUpperCase()=="PENDING"){
+						createPendingInspection(insGroup,insType);
 					}else{
-						var cldName = ""+chklstDateName;
-						if(!matches(cldName,"",null,"undefined")){
-							var cklDateName = cldName.trim();
-							var cldItem = ""+chklstDateItem;
-							var cklDateItem = cldItem.trim();
-							var cldGroup = ""+chklstDateGroup;
-							var cklDateGroup = cldGroup.trim();
-							var cldSGroup = ""+chklstDateSubGroup;
-							var cklDateSubGroup = cldSGroup.trim();
-							var cldField = ""+chklstDateFieldName;
-							var cklDateField = cldField.trim();
-							var dtSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
+						var cdFld = ""+asiDateName;
+						if(!matches(cdFld,"",null,"undefined")){
+							var custDtFld = cdFld.trim();
+							dtSched = AInfo[custDtFld];
 						}else{
-							if(calWkgDay.toUpperCase()=="WORKING"){
-								if(monthDays.toUpperCase()=="MONTH"){
-									var dtSched = dateAddMonths(sysDate,whenSched,true);
-									logDebug("dtSched: " + dtSched);
-								}else{
-									var dtSched = dateAdd(sysDate,whenSched,true);
-								}
+							var cldName = ""+chklstDateName;
+							if(!matches(cldName,"",null,"undefined")){
+								var cklDateName = cldName.trim();
+								var cldItem = ""+chklstDateItem;
+								var cklDateItem = cldItem.trim();
+								var cldGroup = ""+chklstDateGroup;
+								var cklDateGroup = cldGroup.trim();
+								var cldSGroup = ""+chklstDateSubGroup;
+								var cklDateSubGroup = cldSGroup.trim();
+								var cldField = ""+chklstDateFieldName;
+								var cklDateField = cldField.trim();
+								var dtSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
 							}else{
-								if(monthDays.toUpperCase()=="MONTH"){
-								var dtSched = dateAddMonths(sysDate,whenSched);
+								if(calWkgDay.toUpperCase()=="WORKING"){
+									if(monthDays.toUpperCase()=="MONTH"){
+										var dtSched = dateAddMonths(sysDate,parseInt(whenSched),true);
+										logDebug("dtSched: " + dtSched);
+									}else{
+										var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+									}
 								}else{
-									var dtSched = dateAdd(sysDate,whenSched);
+									if(monthDays.toUpperCase()=="MONTH"){
+									var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+									}else{
+										var dtSched = dateAdd(sysDate,parseInt(whenSched));
+									}
 								}
-							}
-							scheduleInspectDate(insType,dtSched);
-							if(!matches(inspectorId,"",null,"undefined")){
-								var inspId = getScheduledInspId(insType);
-								inspId = ""+inspId;
-								if(inspectorId.toUpperCase()=="AUTO"){
-									autoAssignInspection(inspId);
-								}else{
-									if(inspectorId.toUpperCase()=="PRIOR"){
-										var lastInspid = ""+getLastInspector(insType);
-										if(lastInspid!=null){
-											assignInspection(inspId, lastInspid);
-										}else{
-											assignInspection(inspId, inspectorId);
+								scheduleInspectDate(insType,dtSched);
+								if(!matches(inspectorId,"",null,"undefined")){
+									var inspId = getScheduledInspId(insType);
+									inspId = ""+inspId;
+									if(inspectorId.toUpperCase()=="AUTO"){
+										autoAssignInspection(inspId);
+									}else{
+										if(inspectorId.toUpperCase()=="PRIOR"){
+											var lastInspid = ""+getLastInspector(insType);
+											if(lastInspid!=null){
+												assignInspection(inspId, lastInspid);
+											}else{
+												assignInspection(inspId, inspectorId);
+											}
 										}
 									}
 								}
@@ -1227,6 +1226,9 @@ try{
 													}						
 												}else{
 													logDebug("No notification name. No email sent.");
+												}
+												if(!matches(sepRules[row]["Inspection Group"], "",null,"undefined")){
+													var newAppStatus = ""+sepRules[row]["New App Status"];
 												}
 											}
 										}
