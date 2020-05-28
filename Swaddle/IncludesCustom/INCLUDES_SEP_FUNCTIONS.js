@@ -1,4 +1,18 @@
 //INCLUDES_SEP_CUSTOM START
+function doScriptActions() {
+	if (typeof(appTypeArray) == "object") {
+		include(prefix + ":*/*/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/" + appTypeArray[2] + "/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/" + appTypeArray[2] + "/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/" + appTypeArray[2] + "/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/*/*/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/*/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/" + appTypeArray[2] + "/" + appTypeArray[3]);
+	}
+}
+
 function sepGetReqdDocs() {
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
@@ -306,7 +320,7 @@ try{
 				if(pendOrSched.toUpperCase()=="PENDING"){
 					createPendingInspection(insGroup,insType);
 				}else{
-					if(monthDays.toUpperCase()=="MONTH"){
+					if(monthDays.toUpperCase()=="MONTHS"){
 						var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
 					}else{
 						if(calWkgDay.toUpperCase()=="WORKING"){
@@ -357,10 +371,11 @@ try{
 		}
 	}
 	if (appMatch){
+		logDebug("appMatch");
 		var chkFilter = ""+addtlQuery;
 		logDebug("Additional Query field: " + addtlQuery);
-		if (chkFilter.length==0 ||eval(chkFilter) ) {
-			if(insGroup){
+		if (chkFilter.length==0 ||eval(chkFilter) && checkInspectionResult(insType,inspResult) ) {
+			if(insNewGroup){
 				var cFld = ""+asiField;
 				var custFld = cFld.trim();
 				var cVal = ""+asiValue;
@@ -368,7 +383,7 @@ try{
 				if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
 					var pendOrSched = ""+pendSched;
 					if(pendOrSched.toUpperCase()=="PENDING"){
-						createPendingInspection(insGroup,insType);
+						createPendingInspection(insNewGroup,insNewType);
 					}else{
 						var cdFld = ""+asiDateName;
 						if(!matches(cdFld,"",null,"undefined")){
@@ -388,24 +403,27 @@ try{
 								var cklDateField = cldField.trim();
 								var dtSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
 							}else{
-								if(calWkgDay.toUpperCase()=="WORKING"){
-									if(monthDays.toUpperCase()=="MONTH"){
-										var dtSched = dateAddMonths(sysDate,parseInt(whenSched),true);
-										logDebug("dtSched: " + dtSched);
-									}else{
-										var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
-									}
+								var pendOrSched = ""+pendSched;
+								if(pendOrSched.toUpperCase()=="PENDING"){
+									createPendingInspection(insNewGroup,insNewType);
 								}else{
-									if(monthDays.toUpperCase()=="MONTH"){
-									var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+									monthDays = ""+monthDays;
+									if(monthDays.toUpperCase()=="MONTHS"){
+										var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
 									}else{
-										var dtSched = dateAdd(sysDate,parseInt(whenSched));
+										calWkgDay = ""+calWkgDay;
+										if(calWkgDay.toUpperCase()=="WORKING"){
+											var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+										}else{
+											var dtSched = dateAdd(sysDate,parseInt(whenSched));
+										}
 									}
 								}
-								scheduleInspectDate(insType,dtSched);
+								scheduleInspectDate(insNewType,dtSched);
 								if(!matches(inspectorId,"",null,"undefined")){
-									var inspId = getScheduledInspId(insType);
+									var inspId = getScheduledInspId(insNewType);
 									inspId = ""+inspId;
+									inspectorId = ""+inspectorId;
 									if(inspectorId.toUpperCase()=="AUTO"){
 										autoAssignInspection(inspId);
 									}else{
@@ -430,6 +448,7 @@ try{
 	logDebug("An error occurred in sepReSchedInspection: " + err.message);
 	logDebug(err.stack);
 }}
+
 
 function sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail){
 try{
@@ -1229,7 +1248,7 @@ try{
 												}
 												if(!matches(sepRules[row]["Inspection Group"], "",null,"undefined")){
 													var calWkgDay = ""+sepRules[row]["Inspection Group"];
-													var  = ""+sepRules[row]["Inspection Group"];
+													//var  = ""+sepRules[row]["Inspection Group"];
 												}
 											}
 										}
