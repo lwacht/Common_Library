@@ -597,7 +597,7 @@ try{
 					logDebug("Additional Query field: " + addtlQuery);
 					var chkFilter = ""+addtlQuery;
 					if (chkFilter.length==0 ||eval(chkFilter) ) {
-						var cFld = ""+sepRules[row]["Custom Field Name"];
+						var cFld = ""+sepRules[row]["Custom Field"];
 						var custFld = cFld.trim();
 						var cVal = ""+sepRules[row]["Custom Field Value"];
 						var custVal = cVal.trim();
@@ -1148,6 +1148,7 @@ try{
 												}											}
 											if(parCapId){
 												var newLPType = ""+sepRules[row]["Create LP Type"];
+												logDebug("newLPType: " + newLPType);
 												if(!matches(newLPType, "",null,"undefined")){
 													var newLPContact = getContactObj(capId,"Applicant");
 													if(newLPContact){
@@ -1247,8 +1248,46 @@ try{
 													logDebug("No notification name. No email sent.");
 												}
 												if(!matches(sepRules[row]["Inspection Group"], "",null,"undefined")){
-													var calWkgDay = ""+sepRules[row]["Inspection Group"];
-													//var  = ""+sepRules[row]["Inspection Group"];
+													var monthDays = ""+sepRules[row]["Months/Days"];
+													var pendSched = ""+sepRules[row]["Pending/Schedule"];
+													var whenSched = ""+sepRules[row]["When to Schedule"];
+													var calWkgDay = ""+sepRules[row]["Calendar/Work Days"];
+													var insGroup = ""+sepRules[row]["Inspection Group"];
+													var insType = ""+sepRules[row]["Inspection Type"];
+													var inspectorId = ""+sepRules[row]["Inspector"];
+													if(pendSched.toUpperCase()=="PENDING"){
+														createPendingInspection(insGroup,insType,parCapId);
+													}else{
+														if(monthDays.toUpperCase()=="MONTHS"){
+															var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+														}else{
+															if(calWkgDay.toUpperCase()=="WORKING"){
+																var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+															}else{
+																var dtSched = dateAdd(sysDate,parseInt(whenSched));
+															}
+														}
+														var currCapId = capId;
+														capId = parCapId;
+														scheduleInspectDate(insType,dtSched);
+														if(!matches(inspectorId,"",null,"undefined")){
+															var inspId = getScheduledInspId(insType);
+															inspId = ""+inspId;
+															if(inspectorId.toUpperCase()=="AUTO"){
+																autoAssignInspection(inspId);
+															}else{
+																if(inspectorId.toUpperCase()=="PRIOR"){
+																	var lastInspid = ""+getLastInspector(insType);
+																	if(lastInspid!=null){
+																		assignInspection(inspId, lastInspid);
+																	}else{
+																		assignInspection(inspId, inspectorId);
+																	}
+																}
+															}
+														}
+														capId = parCapId;
+													}
 												}
 											}
 										}
@@ -1271,6 +1310,7 @@ try{
 	logDebug("A JavaScript Error occurred: sepIssueLicenseWorkflow:  " + err.message);
 	logDebug(err.stack)
 }}
+
 
 //copy of copyAppSpecific and copyASITables except optional param is include not ignore
 function copyAppSpecificInclude(newCap){ // copy all App Specific info into new Cap, 1 optional parameter for ignoreArr
