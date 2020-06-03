@@ -15,7 +15,7 @@
 var emailText = "";   
 var errLog = "";
 var debugText = "";
-var showDebug = false;	
+var showDebug = true;	
 var showMessage = false;
 var message = "";
 var maxSeconds = 7 * 60;
@@ -32,7 +32,7 @@ batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 wfObjArray = null;
 debug="";
-currentUserID="ADMIN"
+currentUserID="ADMIN";
 
 eval(getMasterScriptText("INCLUDES_ACCELA_FUNCTIONS"));
 eval(getScriptText("INCLUDES_BATCH"));
@@ -173,9 +173,11 @@ var systemUserObj = aa.person.getUser("ADMIN").getOutput();
 logDebug("Start of Job");
 
 try {
+	var startDate = new Date();
+	var startTime = startDate.getTime(); // Start timer
 	var arrJobs = [];
 	var emailAddress = "";
-	arrJobs = findRecsToProcess();
+	arrJobs = findSWADDLERecsToProcess();
 	if(arrJobs){
 		var batchId = getJobParam("BatchJobID"); 
 		var AInfo =[];
@@ -185,6 +187,13 @@ try {
 			var isActive = ""+thisJob["Active"];
 			var thisBatchId = ""+thisJob["Batch ID"];
 			if(isActive=="Yes" && (matches(batchId,"","undefined",null,thisBatchId))){
+				if(job>0){
+					var oldFromDate = fromDate;
+					var oldToDate = toDate;
+					var oldexpStatus = expStatus;
+				}else{
+					var oldFromDate = false;
+				}					
 				fromDate = ""+thisJob["fromDate"]; // Hardcoded dates.   Use for testing only
 				toDate = ""+thisJob["toDate"]; // ""
 				lookAheadDays = ""+thisJob["Look Ahead Days"];
@@ -229,11 +238,15 @@ try {
 				sysFromEmail = AInfo["Agency From Email"];
 				rptName = ""+thisJob["Report Name"];
 				appType = ""+thisJob["Record Type"];
-				startDate = new Date();
 				fromDate = dateAdd(null, parseInt(lookAheadDays))
-				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan))
-				var startTime = startDate.getTime(); // Start timer
-				logDebug("Date Range -- fromDate: " + fromDate + ", toDate: " + toDate)
+				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan));
+				logDebug(expStatus + " for Date Range -- fromDate: " + fromDate + ", toDate: " + toDate);
+				//don't keep pulling the same record set
+				logDebug("oldexpStatus: " + oldexpStatus);
+				logDebug("expStatus: " + expStatus);
+				if(!oldFromDate || oldFromDate!=fromDate || oldToDate!=toDate || oldexpStatus!=expStatus){
+					findExpRecdsToProcess();
+				}
 				mainProcess();
 			}
 		}
@@ -255,7 +268,7 @@ try {
 /-----------------------------------------------------------------------------------------------------*/
 
 
-function findRecsToProcess(){
+function findSWADDLERecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
 	//var modName = getJobParam("ModuleName"); 
@@ -274,7 +287,24 @@ try{
 	}
 	return false;
 }catch(err){
-	logDebug("A JavaScript Error occurred: WTUA:*/*/*/*: Assess Fees: " + err.message);
+	logDebug("A JavaScript Error occurred: findSWADDLERecsToProcess: " + err.message);
+	logDebug(err.stack)
+}}
+
+function findExpRecdsToProcess(){
+try{
+	// Obtain the array of records to loop through.   This can be changed as needed based on the business rules
+	//
+	var expResult = aa.expiration.getLicensesByDate(expStatus, fromDate, toDate);
+	if (expResult.getSuccess()) {
+		arrExpRecds = expResult.getOutput();
+		logDebug("Processing " + arrExpRecds.length + " expiration records");
+	} else {
+		logDebug("ERROR: Getting Expirations, reason is: " + expResult.getErrorType() + ":" + expResult.getErrorMessage());
+		return false
+	}
+}catch(err){
+	logDebug("A JavaScript Error occurred: findExpRecdsToProcess: " + err.message);
 	logDebug(err.stack)
 }}
 
@@ -314,20 +344,9 @@ try{
 	//if (setPrefix != "" && createNotifySets) {
 	//	var masterSet = setPrefix + ":MASTER";
 	//	aa.set.createSet(masterSet,masterSet,"SETS","Contains all sets created by Batch Job " + batchJobName + " Job ID " + batchJobID);
-	//}
-	// Obtain the array of records to loop through.   This can be changed as needed based on the business rules
-	//
-	var expResult = aa.expiration.getLicensesByDate(expStatus, fromDate, toDate);
-	if (expResult.getSuccess()) {
-		myExp = expResult.getOutput();
-		logDebug("Processing " + myExp.length + " expiration records");
-	} else {
-		logDebug("ERROR: Getting Expirations, reason is: " + expResult.getErrorType() + ":" + expResult.getErrorMessage());
-		return false
-	}
-	for (thisExp in myExp) // for each b1expiration (effectively, each license app)
+	for (thisExp in arrExpRecds) // for each b1expiration (effectively, each license app)
 	{
-		b1Exp = myExp[thisExp];
+		b1Exp = arrExpRecds[thisExp];
 		var expDate = b1Exp.getExpDate();
 		if (expDate) {
 			var b1ExpDate = expDate.getMonth() + "/" + expDate.getDayOfMonth() + "/" + expDate.getYear();
@@ -626,7 +645,7 @@ try{
 		}
 	}
 	logDebug("========================================");
-	logDebug("Total CAPS qualified date range: " + myExp.length);
+	logDebug("Total CAPS qualified date range: " + arrExpRecds.length);
 	logDebug("Ignored due to application type: " + capFilterType);
 	logDebug("Ignored due to CAP Status: " + capFilterStatus);
 	logDebug("Ignored due to Deactivated CAP: " + capDeactivated);
@@ -705,3 +724,9 @@ try{
 	logDebug("ERROR: createExpirationSet: " + err.message + " In " + batchJobName);
 	logDebug("Stack: " + err.stack);
 }}
+
+function elapsed() {
+	var thisDate = new Date();
+	var thisTime = thisDate.getTime();
+	return ((thisTime - startTime) / 1000)
+}
