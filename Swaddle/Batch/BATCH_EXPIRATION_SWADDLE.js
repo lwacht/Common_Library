@@ -31,6 +31,8 @@ sysDate = aa.date.getCurrentDate();
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 wfObjArray = null;
+debug="";
+currentUserID="ADMIN"
 
 eval(getMasterScriptText("INCLUDES_ACCELA_FUNCTIONS"));
 eval(getScriptText("INCLUDES_BATCH"));
@@ -53,24 +55,25 @@ function getMasterScriptText(vScriptName) {
     return emseScript.getScriptText() + "";
 }
 
-showDebug = true;
-batchJobID = 0;
-if (batchJobResult.getSuccess())
-  {
-  batchJobID = batchJobResult.getOutput();
-  logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobID);
-  }
-else
-  logDebug("Batch job ID not found " + batchJobResult.getErrorMessage());
-
 
 /*----------------------------------------------------------------------------------------------------/
 |
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-//aa.env.setValue("ModuleName", "EnvHealth");
-//aa.env.setValue("BatchJobID", "ALL");
+aa.env.setValue("ModuleName", "EnvHealth");
+aa.env.setValue("BatchJobID", "ALL_BATCHES");
+batchJobResult = aa.batchJob.getJobID()
+batchJobName = "" + aa.env.getValue("BatchJobName");
+if (batchJobResult.getSuccess())
+  {
+  batchJobRes = batchJobResult.getOutput();
+  logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobRes);
+  }
+else{
+  logDebug("Batch job ID not found " + batchJobResult.getErrorMessage());
+}
+
 
 /* test parameters 
 aa.env.setValue("lookAheadDays", "0");
@@ -256,7 +259,7 @@ function findRecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
 	//var modName = getJobParam("ModuleName"); 
-var modName = "ALL";
+	var modName = "ALL";
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", modName);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -452,7 +455,7 @@ try{
 						logDebug("Email channel detected but contact has no email address--adding to notification set");
 						continue;
 					}else {
-						currentUserID = "ADMIN";
+						//currentUserID = "ADMIN";
 						//runReportAttach(capId,rptName, "altId", capId.getCustomID()); 
 						var eParams = aa.util.newHashtable(); 
 						//add email template notifications params here
