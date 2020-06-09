@@ -61,8 +61,10 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
+/* test params
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
+*/
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
@@ -186,13 +188,14 @@ try {
 			thisJob = arrJobs[job];
 			var isActive = ""+thisJob["Active"];
 			var thisBatchId = ""+thisJob["Batch ID"];
-			if(isActive=="Yes" && (matches(batchId,"","undefined",null,thisBatchId))){
+			if(isActive=="Yes" && (batchId=="ALL_BATCHES" || matches(batchId,"","undefined",null,thisBatchId))){
 				if(job>0){
 					var oldFromDate = fromDate;
 					var oldToDate = toDate;
 					var oldexpStatus = expStatus;
 				}else{
 					var oldFromDate = false;
+					var oldexpStatus = false;
 				}					
 				fromDate = ""+thisJob["fromDate"]; // Hardcoded dates.   Use for testing only
 				toDate = ""+thisJob["toDate"]; // ""
@@ -242,6 +245,7 @@ try {
 				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan));
 				logDebug(expStatus + " for Date Range -- fromDate: " + fromDate + ", toDate: " + toDate);
 				//don't keep pulling the same record set
+				logDebug("batchID: " + thisBatchId);
 				logDebug("oldexpStatus: " + oldexpStatus);
 				logDebug("expStatus: " + expStatus);
 				if(!oldFromDate || oldFromDate!=fromDate || oldToDate!=toDate || oldexpStatus!=expStatus){
