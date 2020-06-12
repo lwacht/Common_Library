@@ -34,9 +34,9 @@ wfObjArray = null;
 debug="";
 currentUserID="ADMIN";
 
-eval(getMasterScriptText("INCLUDES_ACCELA_FUNCTIONS"));
+eval(getScriptText("INCLUDES_ACCELA_FUNCTIONS"));
 eval(getScriptText("INCLUDES_BATCH"));
-eval(getMasterScriptText("INCLUDES_CUSTOM"));
+eval(getScriptText("INCLUDES_CUSTOM"));
 
 override = "function logDebug(dstr){ if(showDebug) { aa.print(dstr); emailText+= dstr + \"<br>\"; } }";
 eval(override);
@@ -61,10 +61,10 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-/* test params
+/* test params*/
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
-*/
+
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
@@ -263,7 +263,7 @@ try {
 		}
 	}
 } catch (err) {
-	logDebug("ERROR: BATCH_TMP_EXPIRATION: " + err.message + " In " + batchJobName + " Line " + err.lineNumber);
+	logDebug("ERROR: BATCH_EXPIRATION_SWADDLE: " + err.message + " In " + batchJobName + " Line " + err.lineNumber);
 	logDebug("Stack: " + err.stack);
 }
 
@@ -657,7 +657,7 @@ try{
 	
 	logDebug("Total CAPS processed: " + capCount);
 }catch (err){
-	logDebug("ERROR: BATCH_TMP_EXPIRATION: " + err.message + " In " + batchJobName);
+	logDebug("ERROR: BATCH_EXPIRATION_SWADDLE: " + err.message + " In " + batchJobName);
 	logDebug("Stack: " + err.stack);
 }}
 
