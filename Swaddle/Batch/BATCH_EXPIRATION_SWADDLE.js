@@ -61,10 +61,10 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-/* test params
+/* test params*/
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
-*/
+
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
@@ -510,6 +510,7 @@ try{
 						addParameter(eParams, "$$contactFirstName$$", cLName);
 						addParameter(eParams, "$$location$$", location);
 						var rFiles = [];
+						logDebug("rptName: " + rptName);
 						if(!matches(rptName, null, "", "undefined")){
 							var rFile;
 							var rptParams = aa.util.newHashMap();
@@ -590,7 +591,7 @@ try{
 		}	
 		while (localSetParentWorkflowTaskAndStatus.length > 1) {
 			logDebug("Setting workflow task " + localSetParentWorkflowTaskAndStatus[0] + " to " + localSetParentWorkflowTaskAndStatus[1] );
-			resultWorkflowTask(localSetParentWorkflowTaskAndStatus[0], localSetParentWorkflowTaskAndStatus[1], "Updated by batch job "+ batchJobName + " Job ID " + batchJobID, "");
+			resultWorkflowTask(localSetParentWorkflowTaskAndStatus[0], localSetParentWorkflowTaskAndStatus[1], "Updated by batch job "+ batchJobName + " Job ID " + batchId, "");
 			localSetParentWorkflowTaskAndStatus.splice(0, 2); // pop these off the queue
 		}
 		// lock Parent License
