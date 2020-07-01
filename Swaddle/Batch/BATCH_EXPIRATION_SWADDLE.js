@@ -16,6 +16,7 @@ var emailText = "";
 var errLog = "";
 var debugText = "";
 var showDebug = true;	
+SENDEMAILS = true;	
 var showMessage = false;
 var message = "";
 var maxSeconds = 7 * 60;
@@ -61,15 +62,16 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-/* test params*/
+/* test params
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
-
+*/
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
   {
   batchJobRes = batchJobResult.getOutput();
+  logDebug("!!!VOTE FOR PEDRO!!!!");
   logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobRes);
   }
 else{
@@ -182,8 +184,8 @@ try {
 	arrJobs = findSWADDLERecsToProcess();
 	if(arrJobs){
 		var batchId = getJobParam("BatchJobID"); 
-		var AInfo =[];
-		loadAppSpecific(AInfo);
+		var SEPInfo =[];
+		loadAppSpecific(SEPInfo);
 		for (job in arrJobs){
 			thisJob = arrJobs[job];
 			var isActive = ""+thisJob["Active"];
@@ -238,7 +240,7 @@ try {
 				actionExpression = ""+thisJob["Addtl Action to Perform"]; // JavaScript used to perform custom action, for example:   addStdCondition(...)
 				sendEmailNotifications = ""+thisJob["Send Email Notifications"];
 				sendEmailNotifications = sendEmailNotifications.substring(0, 1).toUpperCase().equals("Yes");
-				sysFromEmail = AInfo["Agency From Email"];
+				sysFromEmail = SEPInfo["Agency From Email"];
 				rptName = ""+thisJob["Report Name"];
 				appType = ""+thisJob["Record Type"];
 				fromDate = dateAdd(null, parseInt(lookAheadDays))
@@ -354,10 +356,13 @@ try{
 		var expDate = b1Exp.getExpDate();
 		if (expDate) {
 			var b1ExpDate = expDate.getMonth() + "/" + expDate.getDayOfMonth() + "/" + expDate.getYear();
+			b1ExpDate = dateAdd(b1ExpDate,1);
 		}
 		var b1Status = b1Exp.getExpStatus();
 		var renewalCapId = null;
 		capId = aa.cap.getCapID(b1Exp.getCapID().getID1(), b1Exp.getCapID().getID2(), b1Exp.getCapID().getID3()).getOutput();
+		var AInfo =[];
+		loadAppSpecific(AInfo);
 		if (!capId) {
 			logDebug("Could not get a Cap ID for " + b1Exp.getCapID().getID1() + "-" + b1Exp.getCapID().getID2() + "-" + b1Exp.getCapID().getID3());
 			continue;
@@ -397,6 +402,9 @@ try{
 			var result = eval(filterExpression);
 			if (!result) {
 				capFilterExpression++;
+				logDebug("Veterans Exemption: " + AInfo["Veterans Exemption"]);
+				logDebug("Is this Caterer located within Solano County: " + AInfo["Is this Caterer located within Solano County"]);
+				logDebug("Non Profit: " + AInfo["Non Profit"]);
 				logDebug("skipping, due to:  " + filterExpression + " = " + eval(result));
 				continue;
 			}
@@ -509,6 +517,8 @@ try{
 						addParameter(eParams, "$$contactFirstName$$", cFName);
 						addParameter(eParams, "$$contactFirstName$$", cLName);
 						addParameter(eParams, "$$location$$", location);
+						addParameter(eParams, "$$balanceDue$$", feeBalance());
+						logDebug("feeBalance(): " + feeBalance());
 						var rFiles = [];
 						logDebug("rptName: " + rptName);
 						if(!matches(rptName, null, "", "undefined")){
