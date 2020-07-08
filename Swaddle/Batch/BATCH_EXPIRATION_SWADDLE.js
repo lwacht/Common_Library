@@ -62,10 +62,10 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-/* test params
+/* test params */
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
-*/
+
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
@@ -245,11 +245,11 @@ try {
 				appType = ""+thisJob["Record Type"];
 				fromDate = dateAdd(null, parseInt(lookAheadDays))
 				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan));
-				logDebug(expStatus + " for Date Range -- fromDate: " + fromDate + ", toDate: " + toDate);
 				//don't keep pulling the same record set
-				logDebug("batchID: " + thisBatchId);
-				logDebug("oldexpStatus: " + oldexpStatus);
-				logDebug("expStatus: " + expStatus);
+				logDebug("" );
+				logDebug("================== BATCH " + thisBatchId + " ======================");
+				//logDebug("batchID: " + thisBatchId);
+				logDebug(expStatus + " for Date Range -- fromDate: " + fromDate + ", toDate: " + toDate);
 				if(!oldFromDate || oldFromDate!=fromDate || oldToDate!=toDate || oldexpStatus!=expStatus){
 					findExpRecdsToProcess();
 				}
@@ -368,7 +368,7 @@ try{
 			continue;
 		}
 		altId = capId.getCustomID();
-		logDebug("==========: " + altId + " :==========");
+		logDebug("----------: " + altId + " :----------");
 		logDebug("     " +"Renewal Status : " + b1Status + ", Expires on " + b1ExpDate);
 		var capResult = aa.cap.getCap(capId);
 		if (!capResult.getSuccess()) {
@@ -628,6 +628,8 @@ try{
 		}
 		// execute custom expression
 		if (actionExpression.length > 0) {
+			feeSeqList = [];
+			paymentPeriodList = [];
 			logDebug("Executing action expression : " + actionExpression);
 			var result = eval(actionExpression);
 		}
@@ -659,7 +661,7 @@ try{
 			}
 		}
 	}
-	logDebug("========================================");
+	logDebug("----------------------------------------");
 	logDebug("Total CAPS qualified date range: " + arrExpRecds.length);
 	logDebug("Ignored due to application type: " + capFilterType);
 	logDebug("Ignored due to CAP Status: " + capFilterStatus);
@@ -667,6 +669,7 @@ try{
 	logDebug("Ignored due to Custom Filter Expression: " + capFilterExpression);
 	
 	logDebug("Total CAPS processed: " + capCount);
+	logDebug("========================================");
 }catch (err){
 	logDebug("ERROR: BATCH_EXPIRATION_SWADDLE: " + err.message + " In " + batchJobName);
 	logDebug("Stack: " + err.stack);
