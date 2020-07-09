@@ -71,7 +71,7 @@ batchJobName = "" + aa.env.getValue("BatchJobName");
 if (batchJobResult.getSuccess())
   {
   batchJobRes = batchJobResult.getOutput();
-  logDebug("!!!VOTE FOR PEDRO!!!!");
+  logDebug("!!!VOTE FOR PEDRO SECOND UPDATE!!!!");
   logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobRes);
   }
 else{
@@ -243,6 +243,7 @@ try {
 				sysFromEmail = SEPInfo["Agency From Email"];
 				rptName = ""+thisJob["Report Name"];
 				appType = ""+thisJob["Record Type"];
+				arrAppType = appType.split("/");
 				fromDate = dateAdd(null, parseInt(lookAheadDays))
 				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan));
 				//don't keep pulling the same record set
@@ -386,9 +387,15 @@ try{
 		appTypeString = appTypeResult.toString();
 		appTypeArray = appTypeString.split("/");
 		// Filter by CAP Type
-		if (appType.length && !appMatch(appType)) {
+		if(arrAppType.length == 4){
+			if (appType.length && !appMatch(appType) ) {
+				capFilterType++;
+				logDebug("     " +"skipping, Application Type does not match");
+				continue;
+			}
+		}else{
 			capFilterType++;
-			logDebug("     " +"skipping, Application Type does not match")
+			logDebug("     " +"skipping, Record Type Formatted incorrectly: " + appType);
 			continue;
 		}
 		// Filter by CAP Status
