@@ -356,7 +356,7 @@ try{
 			}
 		}
 	}
-	if (appMatch && (!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus)){
+	if (appMatch && (matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
 		var chkFilter = ""+addtlQuery;
 		logDebug("Additional Query field: " + addtlQuery);
 		if (chkFilter.length==0 ||eval(chkFilter) ) {
@@ -422,23 +422,29 @@ try{
 	if (appMatch){
 		logDebug("appMatch");
 		var chkFilter = ""+addtlQuery;
+		var isInspType = ""+inspType;
+		var ssInsType = ""+sInsType;
+		/*
 		logDebug("---------------------------------------");
 		logDebug("Additional Query field: " + addtlQuery);
 		logDebug("chkFilter: " + chkFilter.length);
 		logDebug("inspType: " + inspType);
 		logDebug("sInsType: " + sInsType);
-		logDebug("inspType.toString()==sInsType.toString(): " + inspType.toString()==sInsType.toString());
+		logDebug("inspType.toString()==sInsType.toString(): " + (inspType.toString()==sInsType.toString()));
 		logDebug("inspResult: " + inspResult);
 		logDebug("sInsResult: " + sInsResult);
-		logDebug("inspResult.toString()==sInsResult.toString(): " + inspResult.toString()==sInsResult.toString());
-		logDebug("---------------------------------------");
-		if ((chkFilter.length==0 ||eval(chkFilter)) && inspType.toString()==sInsType.toString() && inspResult.toString()==sInsResult.toString()) {
+		logDebug("inspResult.toString()==sInsResult.toString(): " + (inspResult.toString()==sInsResult.toString()));
+		logDebug("insNewGroup: " + insNewGroup);
+		*/
+		if ((chkFilter.length==0 ||eval(chkFilter)) && (inspType.toString()==sInsType.toString()) && (inspResult.toString()==sInsResult.toString())) {
 			if(insNewGroup){
 				var cFld = ""+asiField;
 				var custFld = cFld.trim();
 				var cVal = ""+asiValue;
 				var custVal = cVal.trim();
-				if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
+				var CInfo = [];
+				loadAppSpecific(CInfo);
+				if(matches(custFld,"",null,"undefined") || custVal==CInfo[custFld]){
 					var pendOrSched = ""+pendSched;
 					if(pendOrSched.toUpperCase()=="PENDING"){
 						createPendingInspection(insNewGroup,insNewType);
@@ -447,7 +453,7 @@ try{
 						var cdFld = ""+asiDateName;
 						if(!matches(cdFld,"",null,"undefined")){
 							var custDtFld = cdFld.trim();
-							dtSched = AInfo[custDtFld];
+							dtSched = CInfo[custDtFld];
 						}else{
 							var cldName = ""+chklstDateName;
 							if(!matches(cldName,"",null,"undefined")){
@@ -664,7 +670,7 @@ try{
 		if(sepRules[row]["Active"]=="Yes"){
 			var taskName = ""+sepRules[row]["Task Name"];
 			var taskStatus = ""+sepRules[row]["Task Status"];
-			if(!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus){
+			if((matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
 				var appMatch = true;
 				var recdType = ""+sepRules[row]["Record Type"];
 				var recdTypeArr = "" + recdType;
@@ -1199,7 +1205,7 @@ try{
 						if(sepRules[row]["Active"]=="Yes"){
 							var taskName = ""+sepRules[row]["Task Name"];
 							var taskStatus = ""+sepRules[row]["Task Status"];
-							if(!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus){
+							if((matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
 								var appMatch = true;
 								var recdType = ""+sepRules[row]["Record Type"];
 								var recdTypeArr = "" + recdType;
