@@ -612,6 +612,10 @@ try{
 	addParameter(eParams, "$$contactEmail$$", priContact.capContact.email);
 	addParameter(eParams, "$$status$$", capStatus);
 	addParameter(eParams, "$$capType$$", cap.getCapType().getAlias());
+	var vEventName = aa.env.getValue("EventName");
+	if(vEventName.indexOf("Workflow")>-1){
+		addParameter(eParams, "$$wfComment$$", wfComment);
+	}
 	var priEmail = ""+priContact.capContact.getEmail();
 	//var capId4Email = aa.cap.createCapIDScriptModel(capId.getID1(), capId.getID2(), capId.getID3());
 	var rFiles = [];
@@ -1673,9 +1677,8 @@ try{
 									fndTaskStatus = true;
 								}
 							}
-							logDebug("fndTaskStatus: " + fndTaskStatus);
+							//logDebug("fndTaskStatus: " + fndTaskStatus);
 							if((!matches(taskName,"",null,"undefined") || wfTask==taskName) && fndTaskStatus){
-								logDebug("here");
 								var appMatch = true;
 								var recdType = ""+sepRules[row]["Record Type"];
 								var recdTypeArr = "" + recdType;
@@ -1731,16 +1734,24 @@ try{
 										}
 										var yrsMosDays = ""+sepRules[row]["Years/Months/Days"];
 										if(!matches(yrsMosDays,"",null,"undefined")){
-											var expDateYear = sysDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
-											var expDate = dateFormatted(sysDate.getMonth(), sysDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
-											var expDate = parseFloat(sepRules[row]["When to Expire"]);
-											if(yrsMosDays.toUpperCase()=="YEARS"){
-												var dtSched = dateAddMonths(sysDate,parseInt(expDate)*12);
-											}else{
-												if(yrsMosDays.toUpperCase()=="MONTHS"){
-													var dtSched = dateAdd(sysDate,parseInt(expDate));
+											var b1ExpResult = aa.expiration.getLicensesByCapID(capId)
+											if (b1ExpResult.getSuccess()){
+												var b1Exp = b1ExpResult.getOutput();
+												var tmpDate = b1Exp.getExpDate();
+												var expDateYear = tmpDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
+												var expDate = dateFormatted(tmpDate.getMonth(), tmpDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
+												var expDate = parseFloat(sepRules[row]["When to Expire"]);
+												if(yrsMosDays.toUpperCase()=="YEARS"){
+													var dtSched = dateAddMonths(tmpDate,parseInt(expDate)*12);
+													dtSched = dateAdd(dtSched,1);
 												}else{
-													var dtSched = dateAdd(sysDate,parseInt(expDate));
+													if(yrsMosDays.toUpperCase()=="MONTHS"){
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}else{
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}
 												}
 											}
 										}else{
@@ -1829,6 +1840,7 @@ try{
 						if(sepRules[row]["Active"]=="Yes"){
 							var balDueMustBeZero = ""+sepRules[row]["Balance Due Must Be Zero"];
 							var balDueMustBeZero = ""+balDueMustBeZero.substring(0, 1).toUpperCase().equals("Y");
+							balanceDue=0;
 							if(balDueMustBeZero && balanceDue<=0){
 								var appMatch = true;
 								var recdType = ""+sepRules[row]["Record Type"];
@@ -1890,16 +1902,24 @@ try{
 										}
 										var yrsMosDays = ""+sepRules[row]["Years/Months/Days"];
 										if(!matches(yrsMosDays,"",null,"undefined")){
-											var expDateYear = sysDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
-											var expDate = dateFormatted(sysDate.getMonth(), sysDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
-											var expDate = parseFloat(sepRules[row]["When to Expire"]);
-											if(yrsMosDays.toUpperCase()=="YEARS"){
-												var dtSched = dateAddMonths(sysDate,parseInt(expDate)*12);
-											}else{
-												if(yrsMosDays.toUpperCase()=="MONTHS"){
-													var dtSched = dateAdd(sysDate,parseInt(expDate));
+											var b1ExpResult = aa.expiration.getLicensesByCapID(capId)
+											if (b1ExpResult.getSuccess()){
+												var b1Exp = b1ExpResult.getOutput();
+												var tmpDate = b1Exp.getExpDate();
+												var expDateYear = tmpDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
+												var expDate = dateFormatted(tmpDate.getMonth(), tmpDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
+												var expDate = parseFloat(sepRules[row]["When to Expire"]);
+												if(yrsMosDays.toUpperCase()=="YEARS"){
+													var dtSched = dateAddMonths(tmpDate,parseInt(expDate)*12);
+													dtSched = dateAdd(dtSched,1);
 												}else{
-													var dtSched = dateAdd(sysDate,parseInt(expDate));
+													if(yrsMosDays.toUpperCase()=="MONTHS"){
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}else{
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}
 												}
 											}
 										}else{
@@ -1945,15 +1965,15 @@ try{
 											var result = eval(actionExpression);
 										}
 									}else{
-										logDebug("sepRenewLicensePayment: Check filter resolved to false: " + chkFilter);
+										logDebug("sepRenewLicensePayment1: Check filter resolved to false: " + chkFilter);
 									}
 									capId = currCapId;
 								}else{
-									logDebug("sepRenewLicensePayment: No app match: " + recdTypeArr);
+									logDebug("sepRenewLicensePayment1: No app match: " + recdTypeArr);
 								}
 							}else{
 								showMessage=true;
-								comment("Balance due is $" + feeBal.toFixed(2) + ".  License/Permit will not be issued.");
+								comment("Balance due is $" + balanceDue.toFixed(2) + ".  License/Permit will not be issued.");
 							}
 						}
 					}
