@@ -62,12 +62,12 @@ function getMasterScriptText(vScriptName) {
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-/* test params 
+/* test params */
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Truck_Permit,Expired_Pumper_Truck_Permit,Delinquent_Pumper_Truck_Permit");
-aa.env.setValue("BatchJobID", "Delinquent_Pumper_Truck_Permit");
-*/
+aa.env.setValue("BatchJobID", "About_To_Expire_UST");
+
 
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
