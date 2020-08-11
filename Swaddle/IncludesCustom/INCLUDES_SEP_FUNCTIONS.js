@@ -185,6 +185,8 @@ try{
 
 function sepEmailNotifContactInsp(recdType, contactType, respectPriChannel, notName, rName, inspName, inspStatus, sysFromEmail, addtlQuery) {
 try{
+	inspName=""+inspName;
+	inspStatus=""+inspStatus;
 	if((matches(inspName,null,"","undefined") || inspType==""+inspName) && (inspStatus.toUpperCase()=="ALL" || inspResult == ""+inspStatus)){
 		var appMatch = true;
 		var recdTypeArr = "" + recdType
@@ -213,6 +215,7 @@ try{
 					}
 				}else{
 					if(cntType.toUpperCase()=="ALL"){
+						cap = aa.cap.getCap(capId).getOutput();
 						var arrType = getContactObjs(capId);
 						for(con in arrType){
 							sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, respectPriChannel);
@@ -454,13 +457,19 @@ try{
 								var cklDateSubGroup = cldSGroup.trim();
 								var cldField = ""+chklstDateFieldName;
 								var cklDateField = cldField.trim();
-								//logDebug("inspId: " +inspId);
-								//logDebug("cklDateName: " +cklDateName);
-								//logDebug("cklDateItem: " +cklDateItem);
-								//logDebug("cklDateGroup: " +cklDateGroup);
-								//logDebug("cklDateSubGroup: " +cklDateSubGroup);
-								//logDebug("cklDateField: " +cklDateField);
+								/*
+								logDebug("inspId: " +inspId);
+								logDebug("cklDateName: " +cklDateName);
+								logDebug("cklDateItem: " +cklDateItem);
+								logDebug("cklDateGroup: " +cklDateGroup);
+								logDebug("cklDateSubGroup: " +cklDateSubGroup);
+								logDebug("cklDateField: " +cklDateField);
+								*/
 								whenSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
+								if(!whenSched){
+									logDebug("Error retrieving checklist item. Setting days to 30.");
+									whenSched = 30;
+								}
 							}
 							var pendOrSched = ""+pendSched;
 							if(pendOrSched.toUpperCase()=="PENDING"){
@@ -600,6 +609,12 @@ try{
 	if(vEventName.indexOf("Workflow")>-1){
 		addParameter(eParams, "$$wfComment$$", wfComment);
 	}
+	if(vEventName.indexOf("Inspection")>-1){
+		addParameter(eParams, "$$inspResultDate$$", inspResultDate);
+		addParameter(eParams, "$$inspType$$", inspType);
+		addParameter(eParams, "$$inspResult$$", inspResult);
+		addParameter(eParams, "$$inspComment$$", inspComment);
+	}
 	var priEmail = ""+priContact.capContact.getEmail();
 	//var capId4Email = aa.cap.createCapIDScriptModel(capId.getID1(), capId.getID2(), capId.getID3());
 	var rFiles = [];
@@ -617,20 +632,20 @@ try{
 			var permit = aa.reportManager.hasPermission(rName,currentUserID);
 			if (permit.getOutput().booleanValue()) {
 				var reportResult = aa.reportManager.getReportResult(report);
-				if(reportResult) {
+				if(reportResult.getSuccess()) {
 					reportOutput = reportResult.getOutput();
 					var reportFile=aa.reportManager.storeReportToDisk(reportOutput);
 					reportFile=reportFile.getOutput();
 					rFiles.push(reportFile);
 					emailRpt = true;
 				}else {
-					logDebug("System failed get report: " + reportResult.getErrorType() + ":" +reportResult.getErrorMessage());
+					logDebug("System failed get report: " +rptName+": "+ reportResult.getErrorType() + ": " +reportResult.getErrorMessage());
 				}
 			} else {
-				logDebug("You have no permission.");
+				logDebug("You do not have permission to run the report " + rptName);
 			}	
 		}else{
-			logDebug("An error occurred retrieving the report: "+ report.getErrorMessage());
+			logDebug("An error occurred retrieving the report: " +rptName+": "+ report.getErrorMessage());
 		}
 	}
 	if(!emailRpt){
