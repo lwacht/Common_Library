@@ -500,7 +500,7 @@ try{
 					}
 				}
 			} 
-			if(!setCreationFailure){
+			if(createNotifySets && !setCreationFailure){
 				setAddResult=aa.set.add(sExpSet,capId);
 				if(!setAddResult.getSuccess()){
 					logDebug("Warning: error adding record to set " + setAddResult.getErrorMessage());
