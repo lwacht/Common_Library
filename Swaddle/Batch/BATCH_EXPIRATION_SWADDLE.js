@@ -12,13 +12,14 @@
 | START: USER CONFIGURABLE PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-var emailText = "";
+var emailText = "";   
 var errLog = "";
 var debugText = "";
-var showDebug = false;	
+var showDebug = true;	
+SENDEMAILS = true;	
+sepMsg="VFP";
 var showMessage = false;
 var message = "";
-var maxSeconds = 7 * 60;
 var br = "<br>";
 var useAppSpecificGroupName = false;
 var publicUser = false;
@@ -31,9 +32,11 @@ sysDate = aa.date.getCurrentDate();
 batchJobResult = aa.batchJob.getJobID()
 batchJobName = "" + aa.env.getValue("BatchJobName");
 wfObjArray = null;
+debug="";
+currentUserID="ADMIN";
 
 eval(getMasterScriptText("INCLUDES_ACCELA_FUNCTIONS"));
-eval(getScriptText("INCLUDES_BATCH"));
+//eval(getScriptText("INCLUDES_BATCH"));
 eval(getMasterScriptText("INCLUDES_CUSTOM"));
 
 override = "function logDebug(dstr){ if(showDebug) { aa.print(dstr); emailText+= dstr + \"<br>\"; } }";
@@ -45,7 +48,7 @@ function getScriptText(vScriptName){
 	var emseScript = emseBiz.getScriptByPK(aa.getServiceProviderCode(),vScriptName,"ADMIN");
 	return emseScript.getScriptText() + "";
 }
-
+	
 function getMasterScriptText(vScriptName) {
     vScriptName = vScriptName.toUpperCase();
     var emseBiz = aa.proxyInvoker.newInstance("com.accela.aa.emse.emse.EMSEBusiness").getOutput();
@@ -53,24 +56,32 @@ function getMasterScriptText(vScriptName) {
     return emseScript.getScriptText() + "";
 }
 
-showDebug = true;
-batchJobID = 0;
-if (batchJobResult.getSuccess())
-  {
-  batchJobID = batchJobResult.getOutput();
-  logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobID);
-  }
-else
-  logDebug("Batch job ID not found " + batchJobResult.getErrorMessage());
-
 
 /*----------------------------------------------------------------------------------------------------/
 |
 | Start: BATCH PARAMETERS
 |
 /------------------------------------------------------------------------------------------------------*/
-//aa.env.setValue("ModuleName", "EnvHealth");
-//aa.env.setValue("BatchJobID", "ALL");
+/* test params */
+aa.env.setValue("ModuleName", "EnvHealth");
+aa.env.setValue("BatchJobID", "ALL_BATCHES");
+aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Trk_Permit,Expired_Pumper_Trk,Delinquent_Pumper_Trk");
+aa.env.setValue("BatchJobID", "About_To_Expire_Small_Water");
+aa.env.setValue("BatchJobID", "About_To_Expire_Pool");
+
+
+batchJobResult = aa.batchJob.getJobID()
+batchJobName = "" + aa.env.getValue("BatchJobName");
+if (batchJobResult.getSuccess())
+  {
+  batchJobRes = batchJobResult.getOutput();
+  //logDebug("!!!VOTE FOR PEDRO THIRD UPDATE!!!!");
+  logDebug("Batch Job " + batchJobName + " Job ID is " + batchJobRes);
+  }
+else{
+  logDebug("Batch job ID not found " + batchJobResult.getErrorMessage());
+}
+
 
 /* test parameters 
 aa.env.setValue("lookAheadDays", "0");
@@ -170,18 +181,36 @@ var systemUserObj = aa.person.getUser("ADMIN").getOutput();
 logDebug("Start of Job");
 
 try {
+	var startDate = new Date();
+	var startTime = startDate.getTime(); // Start timer
 	var arrJobs = [];
 	var emailAddress = "";
-	arrJobs = findRecsToProcess();
+	arrJobs = findSWADDLERecsToProcess();
 	if(arrJobs){
-		var batchId = getJobParam("BatchJobID"); 
-		var AInfo =[];
-		loadAppSpecific(AInfo);
+		var batchId = getJobParam("BatchJobID");
+		if(batchId.indexOf(",")>-1){
+			var arrBatchId = [];
+			arrBatchId = batchId.split(",");
+		}
+		var SEPInfo =[];
+		loadAppSpecific(SEPInfo);
+		var fromDate = "";
+		var toDate = "";
+		var expStatus = "";
+
 		for (job in arrJobs){
 			thisJob = arrJobs[job];
 			var isActive = ""+thisJob["Active"];
 			var thisBatchId = ""+thisJob["Batch ID"];
-			if(isActive=="Yes" && (matches(batchId,"","undefined",null,thisBatchId))){
+			if(isActive=="Yes" && (batchId=="ALL_BATCHES" || matches(batchId,"","undefined",null,thisBatchId) || exists(thisBatchId,arrBatchId))){
+				if(job>0){
+					var oldFromDate = fromDate;
+					var oldToDate = toDate;
+					var oldexpStatus = expStatus;
+				}else{
+					var oldFromDate = false;
+					var oldexpStatus = false;
+				}					
 				fromDate = ""+thisJob["fromDate"]; // Hardcoded dates.   Use for testing only
 				toDate = ""+thisJob["toDate"]; // ""
 				lookAheadDays = ""+thisJob["Look Ahead Days"];
@@ -200,11 +229,11 @@ try {
 				taskToAssign = ""+thisJob["Task to Assign"]; 
 				assignTaskTo = ""+thisJob["Assign Task To"]; 
 				deactivateLicense = ""+thisJob["Deactivate License"]; // deactivate the LP
-				deactivateLicense = deactivateLicense.substring(0, 1).toUpperCase().equals("Yes"); // deactivate the LP
+				deactivateLicense = deactivateLicense.substring(0, 1).toUpperCase().equals("Y"); // deactivate the LP
 				lockParentLicense = ""+thisJob["Parent License Condition"]; // add this lock on the parent license
-				lockParentLicense = lockParentLicense.substring(0, 1).toUpperCase().equals("Yes"); // add this lock on the parent license
+				lockParentLicense = lockParentLicense.substring(0, 1).toUpperCase().equals("Y"); // add this lock on the parent license
 				createRenewalRecord = ""+thisJob["Create Renewal Record"]; // create a temporary record
-				createRenewalRecord = createRenewalRecord.substring(0, 1).toUpperCase().equals("Yes"); // create a temporary record
+				createRenewalRecord = createRenewalRecord.substring(0, 1).toUpperCase().equals("Y"); // create a temporary record
 				feeSched = ""+thisJob["Fee Schedule"]; //
 				feeList = ""+thisJob["List of Fees"]; // comma delimted list of fees to add to renewal record
 				feePeriod = ""+thisJob["Fee Period"]; // fee period to use {LICENSE}
@@ -223,14 +252,20 @@ try {
 				actionExpression = ""+thisJob["Addtl Action to Perform"]; // JavaScript used to perform custom action, for example:   addStdCondition(...)
 				sendEmailNotifications = ""+thisJob["Send Email Notifications"];
 				sendEmailNotifications = sendEmailNotifications.substring(0, 1).toUpperCase().equals("Yes");
-				sysFromEmail = AInfo["Agency From Email"];
+				sysFromEmail = SEPInfo["Agency From Email"];
 				rptName = ""+thisJob["Report Name"];
 				appType = ""+thisJob["Record Type"];
-				startDate = new Date();
+				arrAppType = appType.split("/");
 				fromDate = dateAdd(null, parseInt(lookAheadDays))
-				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan))
-				var startTime = startDate.getTime(); // Start timer
-				logDebug("Date Range -- fromDate: " + fromDate + ", toDate: " + toDate)
+				toDate = dateAdd(null, parseInt(lookAheadDays) + parseInt(daySpan));
+				//don't keep pulling the same record set
+				logDebug("" );
+				logDebug("================== BATCH " + thisBatchId + " ======================");
+				//logDebug("batchId: " + thisBatchId);
+				logDebug(expStatus + " for Date Range -- fromDate: " + fromDate + ", toDate: " + toDate);
+				if(!oldFromDate || oldFromDate!=fromDate || oldToDate!=toDate || oldexpStatus!=expStatus){
+					findExpRecdsToProcess();
+				}
 				mainProcess();
 			}
 		}
@@ -243,7 +278,7 @@ try {
 		}
 	}
 } catch (err) {
-	logDebug("ERROR: BATCH_TMP_EXPIRATION: " + err.message + " In " + batchJobName + " Line " + err.lineNumber);
+	logDebug("ERROR: BATCH_EXPIRATION_SWADDLE: " + err.message + " In " + batchJobName + " Line " + err.lineNumber);
 	logDebug("Stack: " + err.stack);
 }
 
@@ -252,11 +287,11 @@ try {
 /-----------------------------------------------------------------------------------------------------*/
 
 
-function findRecsToProcess(){
+function findSWADDLERecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
 	//var modName = getJobParam("ModuleName"); 
-var modName = "ALL";
+	var modName = "ALL";
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", modName);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -271,7 +306,24 @@ var modName = "ALL";
 	}
 	return false;
 }catch(err){
-	logDebug("A JavaScript Error occurred: WTUA:*/*/*/*: Assess Fees: " + err.message);
+	logDebug("A JavaScript Error occurred: findSWADDLERecsToProcess: " + err.message);
+	logDebug(err.stack)
+}}
+
+function findExpRecdsToProcess(){
+try{
+	// Obtain the array of records to loop through.   This can be changed as needed based on the business rules
+	//
+	var expResult = aa.expiration.getLicensesByDate(expStatus, fromDate, toDate);
+	if (expResult.getSuccess()) {
+		arrExpRecds = expResult.getOutput();
+		logDebug("Processing " + arrExpRecds.length + " expiration records");
+	} else {
+		logDebug("ERROR: Getting Expirations, reason is: " + expResult.getErrorType() + ":" + expResult.getErrorMessage());
+		return false
+	}
+}catch(err){
+	logDebug("A JavaScript Error occurred: findExpRecdsToProcess: " + err.message);
 	logDebug(err.stack)
 }}
 
@@ -311,33 +363,25 @@ try{
 	//if (setPrefix != "" && createNotifySets) {
 	//	var masterSet = setPrefix + ":MASTER";
 	//	aa.set.createSet(masterSet,masterSet,"SETS","Contains all sets created by Batch Job " + batchJobName + " Job ID " + batchJobID);
-	//}
-	// Obtain the array of records to loop through.   This can be changed as needed based on the business rules
-	//
-	var expResult = aa.expiration.getLicensesByDate(expStatus, fromDate, toDate);
-	if (expResult.getSuccess()) {
-		myExp = expResult.getOutput();
-		logDebug("Processing " + myExp.length + " expiration records");
-	} else {
-		logDebug("ERROR: Getting Expirations, reason is: " + expResult.getErrorType() + ":" + expResult.getErrorMessage());
-		return false
-	}
-	for (thisExp in myExp) // for each b1expiration (effectively, each license app)
+	for (thisExp in arrExpRecds) // for each b1expiration (effectively, each license app)
 	{
-		b1Exp = myExp[thisExp];
+		b1Exp = arrExpRecds[thisExp];
 		var expDate = b1Exp.getExpDate();
 		if (expDate) {
 			var b1ExpDate = expDate.getMonth() + "/" + expDate.getDayOfMonth() + "/" + expDate.getYear();
+			b1ExpDate = dateAdd(b1ExpDate,1);
 		}
 		var b1Status = b1Exp.getExpStatus();
 		var renewalCapId = null;
 		capId = aa.cap.getCapID(b1Exp.getCapID().getID1(), b1Exp.getCapID().getID2(), b1Exp.getCapID().getID3()).getOutput();
+		var AInfo =[];
+		loadAppSpecific(AInfo);
 		if (!capId) {
 			logDebug("Could not get a Cap ID for " + b1Exp.getCapID().getID1() + "-" + b1Exp.getCapID().getID2() + "-" + b1Exp.getCapID().getID3());
 			continue;
 		}
 		altId = capId.getCustomID();
-		logDebug("==========: " + altId + " :==========");
+		logDebug("----------: " + altId + " :----------");
 		logDebug("     " +"Renewal Status : " + b1Status + ", Expires on " + b1ExpDate);
 		var capResult = aa.cap.getCap(capId);
 		if (!capResult.getSuccess()) {
@@ -355,9 +399,15 @@ try{
 		appTypeString = appTypeResult.toString();
 		appTypeArray = appTypeString.split("/");
 		// Filter by CAP Type
-		if (appType.length && !appMatch(appType)) {
+		if(arrAppType.length == 4){
+			if (appType.length && !appMatch(appType) ) {
+				capFilterType++;
+				logDebug("     " +"skipping, Application Type does not match");
+				continue;
+			}
+		}else{
 			capFilterType++;
-			logDebug("     " +"skipping, Application Type does not match")
+			logDebug("     " +"skipping, Record Type Formatted incorrectly: " + appType);
 			continue;
 		}
 		// Filter by CAP Status
@@ -371,6 +421,9 @@ try{
 			var result = eval(filterExpression);
 			if (!result) {
 				capFilterExpression++;
+				//logDebug("Veterans Exemption: " + AInfo["Veterans Exemption"]);
+				//logDebug("Is this Caterer located within Solano County: " + AInfo["Is this Caterer located within Solano County"]);
+				//logDebug("Non Profit: " + AInfo["Non Profit"]);
 				logDebug("skipping, due to:  " + filterExpression + " = " + eval(result));
 				continue;
 			}
@@ -385,7 +438,6 @@ try{
 			logDebug( "deactivated linked License");
 		}
 		// update expiration status
-		logDebug("newExpStatus: " + newExpStatus.length );
 		if (newExpStatus.length > 0) {
 			b1Exp.setExpStatus(newExpStatus);
 			aa.expiration.editB1Expiration(b1Exp.getB1Expiration());
@@ -402,6 +454,136 @@ try{
 				refLic.setLicenseExpirationDate(aa.date.parseDate(newExpDate));
 				aa.licenseScript.editRefLicenseProf(refLic);
 				logDebug("updated License expiration to " + newExpDate);
+			}
+		}
+		// assign task
+		if (taskToAssign.length > 0) {
+			updateTaskDepartment(taskToAssign, assignTaskTo);
+			logDebug( taskToAssign + " assigned to " + assignTaskTo);
+		}
+		// update CAP status
+		if (newAppStatus.length > 0) {
+            updateAppStatus(newAppStatus, "");
+		}
+		// schedule Inspection
+		if (inspSched.length > 0) {
+			//lwacht: this check is specific to EnvHealth and should be removed for other implementations
+			if(getAppSpecific("Non Profit")!="CHECKED" && appType.indexOf("School")<0){
+				//lwacht: end custom solution
+				scheduleInspection(inspSched, "1");
+				inspId = getScheduledInspId(inspSched);
+				if (inspId) {
+					autoAssignInspection(inspId);
+				}
+				logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
+			}
+		}
+		if (createNotifySets && setPrefix != "") {
+			var setCreationFailure = false;
+			if(!setCreated) {
+				var vExpSet =  createExpirationSet(setPrefix);
+				if(vExpSet){
+					var sExpSet = vExpSet.toUpperCase();
+					var setHeaderSetType = aa.set.getSetByPK(sExpSet).getOutput();
+					setHeaderSetType.setRecordSetType(setType);
+					setHeaderSetType.setSetStatus(setStatus);
+					updResult = aa.set.updateSetHeader(setHeaderSetType);
+					setCreated = true;
+				}else{
+					logDebug("*****SET NOT CREATED****");
+					setCreationFailure = true;
+				}
+			}
+			if (masterSet) {
+				var setResult = aa.set.addSetofSetMember(masterSet, s.id); 
+				if (!setResult.getSuccess()) {
+					logDebug("Warning: could not add channel set to master set " + setResult.getErrorMessage());
+					}
+				}
+			} 
+			if(createNotifySets && !setCreationFailure){
+				setAddResult=aa.set.add(sExpSet,capId);
+				if(!setAddResult.getSuccess()){
+					logDebug("Warning: error adding record to set " + setAddResult.getErrorMessage());
+				}else{
+					logDebug("Successfully added record to set.")
+				}
+			}
+		// Add to the overall Set
+		/*if (setPrefix != "") {
+			var s = new capSet(setPrefix + ":ALL",setPrefix + ":ALL",setType,"All Records Processed by Batch Job " + batchJobName + " Job ID " + batchJobID);
+			s.status = setStatus;
+			s.update(); logDebug("Set Status = " + s.status);
+			s.add(capId);
+			if (masterSet) {
+				aa.set.addSetofSetMember(masterSet, s.id); 
+				}
+			}*/
+		// update workflow tasks, statuses.    There can be more than one pair.
+		// modified 3.22.16, wiping out parameter values for subsequent records.  Make local copy. -JEC
+		var localSetParentWorkflowTaskAndStatus = new Array();
+		for (i=0; i<setParentWorkflowTaskAndStatus.length; i++) {
+			localSetParentWorkflowTaskAndStatus[i] = setParentWorkflowTaskAndStatus[i];
+		}	
+		while (localSetParentWorkflowTaskAndStatus.length > 1) {
+			logDebug("Setting workflow task " + localSetParentWorkflowTaskAndStatus[0] + " to " + localSetParentWorkflowTaskAndStatus[1] );
+			resultWorkflowTask(localSetParentWorkflowTaskAndStatus[0], localSetParentWorkflowTaskAndStatus[1], "Updated by batch job "+ batchJobName + " Job ID " + batchId, "");
+			localSetParentWorkflowTaskAndStatus.splice(0, 2); // pop these off the queue
+		}
+		// lock Parent License
+		if (lockParentLicense) {
+			licCap = getLicenseCapId("*/*/*/*");
+
+			if (licCap) {
+				logDebug(licCap + ": adding Lock : " + lockParentLicense);
+				addStdCondition("Suspension", lockParentLicense, licCap);
+			} else
+				logDebug("Can't add Lock, no parent license found");
+		}
+		// add fees to parent
+		// this section may need to include a call to a custom function or explicit code before the if(parentFeeList.length... clause if the
+		// renewal fees are based on ASI.  Use the parameter ONLY if that fee is to be applied to ALL records that qualify for processing.
+		if (parentFeeList.length > 0) {
+			for (var fe in parentFeeList.split(",")) {
+				logDebug("Adding fee: " + parentFeeList.split(",")[fe] + " to parent record");	
+				//Alternate to add fees by date.  Useful if fee changes are coming soon
+				//var feObj = addFeeByDate(capId, b1ExpDate, parentFeeList.split(",")[fe], parentFeeSched, parentFeePeriod, 1, "N");
+				//var feObj = addFee(parentFeeList.split(",")[fe], parentFeeList, parentFeeList, 1, "Y", capId);
+				var feObj = addFee(parentFeeList.split(",")[fe], parentFeeSched, parentFeePeriod, 1, "Y", capId);
+			}
+		}
+		// execute custom expression
+		if (actionExpression.length > 0) {
+			feeSeqList = []; 
+			paymentPeriodList = [];
+			logDebug("Executing action expression : " + actionExpression);
+			var result = eval(actionExpression);
+		}
+		// create renewal record and add fees
+		if (createRenewalRecord) {
+			createResult = aa.cap.createRenewalRecord(capId);
+			if (!createResult.getSuccess() || !createResult.getOutput()) {
+				logDebug("Could not create renewal record.   This could be due to EMSE errors on record creation : " + createResult.getErrorMessage());
+			} else {
+				renewalCapId = createResult.getOutput();
+				renewalCap = aa.cap.getCap(renewalCapId).getOutput();
+				if (renewalCap.isCompleteCap()) {
+					logDebug("Renewal Record already exists : " + renewalCapId.getCustomID());
+				} else {
+					logDebug("created Renewal Record " + renewalCapId.getCustomID());
+
+					// add fees
+					// this section may need to include a call to a custom function or explicit code before the if(feeList.length... clause if the
+					// renewal fees are based on ASI.  Use the parameter ONLY if that fee is to be applied to ALL records that qualify for processing.
+					if (feeList.length > 0) {
+						for (var fe in feeList.split(",")) {
+							logDebug("Adding fee: " + feeList.split(",")[fe] + " to renewal record");
+							var feObj = addFee(feeList.split(",")[fe], feeSched, feePeriod, 1, "Y", renewalCapId);
+							//Alternate to add fees by date.  Useful if fee changes are coming soon
+							//var feObj = addFeeByDate(capId, b1ExpDate, feeList.split(",")[fe], feeSched, feePeriod, 1, "N");
+						}
+					}
+				}
 			}
 		}
 		if (sendEmailToContactTypes.length > 0 && emailTemplate.length > 0 ) {
@@ -439,11 +621,15 @@ try{
 				}
 			}
 			// process each qualified contact
-			aa.print("sendArray: " + sendArray.length);
+			var arrSendEmails = "";
+			var rFiles = [];
 			for (var i in sendArray) {
 				//  create set  
 				var channel = ("" + lookup("CONTACT_PREFERRED_CHANNEL","" + sendArray[i].capContact.getPreferredChannel())).toUpperCase();
 				var email = sendArray[i].capContact.getEmail();
+				if(!matches(email,null,"","undefined")){
+					arrSendEmails += email+"; ";
+				}
 				var cFName = sendArray[i].capContact.firstName;
 				var cLName = sendArray[i].capContact.lastName;
 				//logDebug("Notification requested for " + sendArray[i] + " preferred channel: " + channel);
@@ -452,7 +638,7 @@ try{
 						logDebug("Email channel detected but contact has no email address--adding to notification set");
 						continue;
 					}else {
-						currentUserID = "ADMIN";
+						//currentUserID = "ADMIN";
 						//runReportAttach(capId,rptName, "altId", capId.getCustomID()); 
 						var eParams = aa.util.newHashtable(); 
 						//add email template notifications params here
@@ -479,11 +665,14 @@ try{
 						addParameter(eParams, "$$altID$$", capId.getCustomID());
 						addParameter(eParams, "$$capID$$", capId.getCustomID());
 						addParameter(eParams, "$$capType$$", capAlias);
-						addParameter(eParams, "$$expirationDate$$", expDate);
+						addParameter(eParams, "$$expirationDate$$", b1ExpDate);
 						addParameter(eParams, "$$contactFirstName$$", cFName);
 						addParameter(eParams, "$$contactFirstName$$", cLName);
 						addParameter(eParams, "$$location$$", location);
+						addParameter(eParams, "$$balanceDue$$", feeBalance());
+						logDebug("feeBalance(): " + feeBalance());
 						var rFiles = [];
+						logDebug("rptName: " + rptName);
 						if(!matches(rptName, null, "", "undefined")){
 							var rFile;
 							var rptParams = aa.util.newHashMap();
@@ -493,145 +682,31 @@ try{
 								rFiles.push(rFile);
 							}
 						}
-						sendNotification(sysFromEmail,email,"",emailTemplate,eParams, rFiles,capId);
-						logDebug(altId + ": Sent Email template " + emailTemplate + " to " + conTypeArray[thisType] + " : " + email);
 					}
 				}else{
 					logDebug("Preferred channel is ignored, adding to notification set.");
 				}
 			}
-		}
-		// assign task
-		if (taskToAssign.length > 0) {
-			updateTaskDepartment(taskToAssign, assignTaskTo);
-			logDebug( taskToAssign + " assigned to " + assignTaskTo);
-		}
-		// update CAP status
-		if (newAppStatus.length > 0) {
-            updateAppStatus(newAppStatus, "");
-		}
-		// schedule Inspection
-		if (inspSched.length > 0) {
-			//lwacht: this check is specific to EnvHealth and should be removed for other implementations
-			if(getAppSpecific("Non Profit")!="CHECKED" && appType.indexOf("School")<0){
-				//lwacht: end custom solution
-				scheduleInspection(inspSched, "1");
-				inspId = getScheduledInspId(inspSched);
-				if (inspId) {
-					autoAssignInspection(inspId);
-				}
-				logDebug("Scheduled " + inspSched + ", Inspection ID: " + inspId);
-			}
-		}
-		if (createNotifySets && setPrefix != "") {
-			if(!setCreated) {
-				var vExpSet =  createExpirationSet(setPrefix);
-				var sExpSet = vExpSet.toUpperCase();
-				var setHeaderSetType = aa.set.getSetByPK(sExpSet).getOutput();
-				setHeaderSetType.setRecordSetType(setType);
-				setHeaderSetType.setSetStatus(setStatus);
-				updResult = aa.set.updateSetHeader(setHeaderSetType);
-				setCreated = true;
-			}
-			if (masterSet) {
-				var setResult = aa.set.addSetofSetMember(masterSet, s.id); 
-				if (!setResult.getSuccess()) {
-					logDebug("Warning: could not add channel set to master set " + setResult.getErrorMessage());
-					}
-				}
-			} 
-			setAddResult=aa.set.add(sExpSet,capId);
-			if(!setAddResult.getSuccess()){
-				logDebug("Warning: error adding record to set " + setAddResult.getErrorMessage());
+			logDebug("arrSendEmails: " + arrSendEmails);
+			if(arrSendEmails.length>0){
+				sendNotification(sysFromEmail,arrSendEmails,"",emailTemplate,eParams, rFiles,capId);
+				logDebug(altId + ": Sent Email template " + emailTemplate + " to " + conTypeArray[thisType] + " : " + arrSendEmails);
 			}else{
-				logDebug("Successfully added record to set.")
-			}
-		// Add to the overall Set
-		/*if (setPrefix != "") {
-			var s = new capSet(setPrefix + ":ALL",setPrefix + ":ALL",setType,"All Records Processed by Batch Job " + batchJobName + " Job ID " + batchJobID);
-			s.status = setStatus;
-			s.update(); logDebug("Set Status = " + s.status);
-			s.add(capId);
-			if (masterSet) {
-				aa.set.addSetofSetMember(masterSet, s.id); 
-				}
-			}*/
-		// update workflow tasks, statuses.    There can be more than one pair.
-		// modified 3.22.16, wiping out parameter values for subsequent records.  Make local copy. -JEC
-		var localSetParentWorkflowTaskAndStatus = new Array();
-		for (i=0; i<setParentWorkflowTaskAndStatus.length; i++) {
-			localSetParentWorkflowTaskAndStatus[i] = setParentWorkflowTaskAndStatus[i];
-		}	
-		while (localSetParentWorkflowTaskAndStatus.length > 1) {
-			logDebug("Setting workflow task " + localSetParentWorkflowTaskAndStatus[0] + " to " + localSetParentWorkflowTaskAndStatus[1] );
-			resultWorkflowTask(localSetParentWorkflowTaskAndStatus[0], localSetParentWorkflowTaskAndStatus[1], "Updated by batch job "+ batchJobName + " Job ID " + batchJobID, "");
-			localSetParentWorkflowTaskAndStatus.splice(0, 2); // pop these off the queue
-		}
-		// lock Parent License
-		if (lockParentLicense) {
-			licCap = getLicenseCapId("*/*/*/*");
-
-			if (licCap) {
-				logDebug(licCap + ": adding Lock : " + lockParentLicense);
-				addStdCondition("Suspension", lockParentLicense, licCap);
-			} else
-				logDebug("Can't add Lock, no parent license found");
-		}
-		// add fees to parent
-		// this section may need to include a call to a custom function or explicit code before the if(parentFeeList.length... clause if the
-		// renewal fees are based on ASI.  Use the parameter ONLY if that fee is to be applied to ALL records that qualify for processing.
-		if (parentFeeList.length > 0) {
-			for (var fe in parentFeeList.split(",")) {
-				logDebug("Adding fee: " + parentFeeList.split(",")[fe] + " to parent record");	
-				//Alternate to add fees by date.  Useful if fee changes are coming soon
-				//var feObj = addFeeByDate(capId, b1ExpDate, parentFeeList.split(",")[fe], parentFeeSched, parentFeePeriod, 1, "N");
-				//var feObj = addFee(parentFeeList.split(",")[fe], parentFeeList, parentFeeList, 1, "Y", capId);
-				var feObj = addFee(parentFeeList.split(",")[fe], parentFeeSched, parentFeePeriod, 1, "Y", capId);
-			}
-		}
-		// execute custom expression
-		if (actionExpression.length > 0) {
-			logDebug("Executing action expression : " + actionExpression);
-			var result = eval(actionExpression);
-		}
-		// create renewal record and add fees
-		if (createRenewalRecord) {
-			createResult = aa.cap.createRenewalRecord(capId);
-			if (!createResult.getSuccess() || !createResult.getOutput()) {
-				logDebug("Could not create renewal record.   This could be due to EMSE errors on record creation : " + createResult.getErrorMessage());
-			} else {
-				renewalCapId = createResult.getOutput();
-				renewalCap = aa.cap.getCap(renewalCapId).getOutput();
-				if (renewalCap.isCompleteCap()) {
-					logDebug("Renewal Record already exists : " + renewalCapId.getCustomID());
-				} else {
-					logDebug("created Renewal Record " + renewalCapId.getCustomID());
-
-					// add fees
-					// this section may need to include a call to a custom function or explicit code before the if(feeList.length... clause if the
-					// renewal fees are based on ASI.  Use the parameter ONLY if that fee is to be applied to ALL records that qualify for processing.
-					if (feeList.length > 0) {
-						for (var fe in feeList.split(",")) {
-							logDebug("Adding fee: " + feeList.split(",")[fe] + " to renewal record");
-							var feObj = addFee(feeList.split(",")[fe], feeSched, feePeriod, 1, "Y", renewalCapId);
-							//Alternate to add fees by date.  Useful if fee changes are coming soon
-							//var feObj = addFeeByDate(capId, b1ExpDate, feeList.split(",")[fe], feeSched, feePeriod, 1, "N");
-						}
-					}
-				}
+				logDebug("No emails found.  Not emailing.");
 			}
 		}
 	}
-	logDebug("========================================");
-	logDebug("Total CAPS qualified date range: " + myExp.length);
+	logDebug("----------------------------------------");
+	logDebug("Total CAPS qualified date range: " + arrExpRecds.length);
 	logDebug("Ignored due to application type: " + capFilterType);
 	logDebug("Ignored due to CAP Status: " + capFilterStatus);
 	logDebug("Ignored due to Deactivated CAP: " + capDeactivated);
 	logDebug("Ignored due to Custom Filter Expression: " + capFilterExpression);
 	
 	logDebug("Total CAPS processed: " + capCount);
+	logDebug("========================================");
 }catch (err){
-	logDebug("ERROR: BATCH_TMP_EXPIRATION: " + err.message + " In " + batchJobName);
+	logDebug("ERROR: BATCH_EXPIRATION_SWADDLE: " + err.message + " In " + batchJobName);
 	logDebug("Stack: " + err.stack);
 }}
 
@@ -702,3 +777,9 @@ try{
 	logDebug("ERROR: createExpirationSet: " + err.message + " In " + batchJobName);
 	logDebug("Stack: " + err.stack);
 }}
+
+function elapsed() {
+	var thisDate = new Date();
+	var thisTime = thisDate.getTime();
+	return ((thisTime - startTime) / 1000)
+}

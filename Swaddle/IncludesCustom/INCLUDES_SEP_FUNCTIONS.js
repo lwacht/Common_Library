@@ -1,4 +1,5 @@
 //INCLUDES_SEP_CUSTOM START
+
 function sepGetReqdDocs() {
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
@@ -161,17 +162,17 @@ try{
 					var arrType = cntType.split(",");
 					for(con in arrType){
 						var priContact = getContactObj(capId,arrType[con]);
-						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
 					}
 				}else{
 					if(cntType.toUpperCase()=="ALL"){
 						var arrType = getContactObjs(capId);
 						for(con in arrType){
-							sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail);
+							sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, respectPriChannel);
 						}
 					}else{
 						var priContact = getContactObj(capId,cntType);
-						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
 					}						
 				}						
 			}
@@ -181,6 +182,58 @@ try{
 	logDebug("An error occurred in sepEmailNotifContactWkfl: " + err.message);
 	logDebug(err.stack);
 }}
+
+function sepEmailNotifContactInsp(recdType, contactType, respectPriChannel, notName, rName, inspName, inspStatus, sysFromEmail, addtlQuery) {
+try{
+	inspName=""+inspName;
+	inspStatus=""+inspStatus;
+	if((matches(inspName,null,"","undefined") || inspType==""+inspName) && (inspStatus.toUpperCase()=="ALL" || inspResult == ""+inspStatus)){
+		var appMatch = true;
+		var recdTypeArr = "" + recdType
+		var arrAppType = recdTypeArr.split("/");
+		if (arrAppType.length != 4){
+			logDebug("The record type is incorrectly formatted: " + recdType);
+			return false;
+		}else{
+			for (xx in arrAppType){
+				if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+					appMatch = false;
+				}
+			}
+		}
+		if (appMatch){
+			var chkFilter = ""+addtlQuery;
+			logDebug("Additional Query field: " + addtlQuery);
+			if (chkFilter.length==0 ||eval(chkFilter) ) {
+				var cntType = ""+contactType;
+				logDebug("cntType: " + cntType);
+				if(cntType.indexOf(",")>-1){
+					var arrType = cntType.split(",");
+					for(con in arrType){
+						var priContact = getContactObj(capId,arrType[con]);
+						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
+					}
+				}else{
+					if(cntType.toUpperCase()=="ALL"){
+						cap = aa.cap.getCap(capId).getOutput();
+						var arrType = getContactObjs(capId);
+						for(con in arrType){
+							sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, respectPriChannel);
+						}
+					}else{
+						var priContact = getContactObj(capId,cntType);
+						sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
+					}						
+				}						
+			}
+		}
+	}
+}catch(err){
+	logDebug("An error occurred in sepEmailNotifContactInsp: " + err.message);
+	logDebug(err.stack);
+}}
+
+
 
 function sepEmailNotifContactAppSub(recdType, contactType, respectPriChannel, notName, rName, sysFromEmail, addtlQuery) {
 try{
@@ -206,17 +259,17 @@ try{
 				var arrType = cntType.split(",");
 				for(con in arrType){
 					var priContact = getContactObj(capId,arrType[con]);
-					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail,respectPriChannel);
 				}
 			}else{
 				if(cntType.toUpperCase()=="ALL"){
 					var arrType = getContactObjs(capId);
 					for(con in arrType){
-						sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail);
+						sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, respectPriChannel);
 					}
 				}else{
 					var priContact = getContactObj(capId,cntType);
-					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
 				}						
 			}						
 		}
@@ -226,7 +279,7 @@ try{
 	logDebug(err.stack);
 }}
 
-function sepSchedInspectionAppSub(recdType, insGroup, insType, pendSched, asiField, asiValue, daysAhead, calWkgDay, inspName, addtlQuery) {
+function sepSchedInspectionAppSub(recdType, sInsGroup, sInsType, pendSched, asiField, asiValue, daysAhead, calWkgDay, inspName, addtlQuery) {
 try{
 	var appMatch = true;
 	var recdTypeArr = "" + recdType
@@ -252,16 +305,16 @@ try{
 			if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
 				var pendOrSched = ""+pendSched;
 				if(pendOrSched.toUpperCase()=="PENDING"){
-					createPendingInspection(insGroup,insType);
+					createPendingInspection(sInsGroup,sInsType);
 				}else{
-					if(calWkgDay=="Working"){
+					if(calWkgDay.toUpperCase()=="WORKING"){
 						var dtSched = dateAdd(sysDate,daysAhead,true);
 					}else{
 						var dtSched = dateAdd(sysDate,daysAhead);
 					}
-					scheduleInspectDate(insType,dtSched);
+					sepScheduleInspectDate(sInsType,dtSched);
 					if(!matches(inspName,"",null,"undefined")){
-						var inspId = getScheduledInspId(insType);
+						var inspId = getScheduledInspId(sInsType);
 						inspName = ""+inspName;
 						if(inspName.toUpperCase()=="AUTO"){
 							autoAssignInspection(inspId);
@@ -278,13 +331,220 @@ try{
 	logDebug(err.stack);
 }}
 
-function sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail){
+function sepSchedInspectionWkfl(recdType, taskName, taskStatus, sInsGroup, sInsType, pendSched, asiField, asiValue, monthDays, whenSched, calWkgDay, inspectorId, addtlQuery) {
 try{
+	var appMatch = true;
+	var recdTypeArr = "" + recdType
+	var arrAppType = recdTypeArr.split("/");
+	if (arrAppType.length != 4){
+		logDebug("The record type is incorrectly formatted: " + recdType);
+		return false;
+	}else{
+		for (xx in arrAppType){
+			if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+				appMatch = false;
+			}
+		}
+	}
+	if (appMatch && (matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
+		var chkFilter = ""+addtlQuery;
+		logDebug("Additional Query field: " + addtlQuery);
+		if (chkFilter.length==0 ||eval(chkFilter) ) {
+			var cFld = ""+asiField;
+			var custFld = cFld.trim();
+			var cVal = ""+asiValue;
+			var custVal = cVal.trim();
+			if(matches(custFld,"",null,"undefined") || custVal==AInfo[custFld]){
+				var pendOrSched = ""+pendSched;
+				if(pendOrSched.toUpperCase()=="PENDING"){
+					createPendingInspection(sInsGroup,sInsType);
+				}else{
+					if(monthDays.toUpperCase()=="MONTHS"){
+						var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+					}else{
+						if(calWkgDay.toUpperCase()=="WORKING"){
+							var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+						}else{
+							var dtSched = dateAdd(sysDate,parseInt(whenSched));
+						}
+					}
+					sepScheduleInspectDate(sInsType,dtSched);
+					if(!matches(inspectorId,"",null,"undefined")){
+						var inspId = getScheduledInspId(sInsType);
+						inspId = ""+inspId;
+						if(inspectorId.toUpperCase()=="AUTO"){
+							autoAssignInspection(inspId);
+						}else{
+							if(inspectorId.toUpperCase()=="PRIOR"){
+								var lastInspid = ""+getLastInspector(sInsType);
+								if(lastInspid!=null){
+									assignInspection(inspId, lastInspid);
+								}else{
+									assignInspection(inspId, inspectorId);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("An error occurred in sepSchedInspectionWkfl: " + err.message);
+	logDebug(err.stack);
+}}
+
+function sepReSchedInspection(recdType, ssInsGroup, sInsType, sInsResult, pendSched, asiField, asiValue, monthDays, whenSched, calWkgDay, insNewGroup, insNewType, inspectorId, asiDateName, chklstDateName, chklstDateItem, chklstDateGroup, chklstDateSubGroup, chklstDateFieldName, addtlQuery, actionExpression) {
+try{
+	var appMatch = true;
+	var recdTypeArr = "" + recdType
+	var arrAppType = recdTypeArr.split("/");
+	if (arrAppType.length != 4){
+		logDebug("The record type is incorrectly formatted: " + recdType);
+		return false;
+	}else{
+		for (xx in arrAppType){
+			if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+				appMatch = false;
+			}
+		}
+	}
+	if (appMatch){
+		logDebug("appMatch");
+		var chkFilter = ""+addtlQuery;
+		var isInspType = ""+inspType;
+		var ssInsType = ""+sInsType;
+		/*
+		logDebug("---------------------------------------");
+		logDebug("Additional Query field: " + addtlQuery);
+		logDebug("chkFilter: " + chkFilter.length);
+		logDebug("inspType: " + inspType);
+		logDebug("sInsType: " + sInsType);
+		logDebug("inspType.toString()==sInsType.toString(): " + (inspType.toString()==sInsType.toString()));
+		logDebug("inspResult: " + inspResult);
+		logDebug("sInsResult: " + sInsResult);
+		logDebug("inspResult.toString()==sInsResult.toString(): " + (inspResult.toString()==sInsResult.toString()));
+		logDebug("insNewGroup: " + insNewGroup);
+		*/
+		if ((chkFilter.length==0 ||eval(chkFilter)) && (inspType.toString()==sInsType.toString()) && (inspResult.toString()==sInsResult.toString())) {
+			if(insNewGroup){
+				var cFld = ""+asiField;
+				var custFld = cFld.trim();
+				var cVal = ""+asiValue;
+				var custVal = cVal.trim();
+				var CInfo = [];
+				loadAppSpecific(CInfo);
+				if(matches(custFld,"",null,"undefined") || custVal==CInfo[custFld]){
+					var pendOrSched = ""+pendSched;
+					if(pendOrSched.toUpperCase()=="PENDING"){
+						createPendingInspection(insNewGroup,insNewType);
+					}else{
+						var dtSchedDays = false;
+						var cdFld = ""+asiDateName;
+						if(!matches(cdFld,"",null,"undefined")){
+							var custDtFld = cdFld.trim();
+							dtSched = CInfo[custDtFld];
+						}else{
+							var cldName = ""+chklstDateName;
+							//logDebug("cldName: " + cldName);
+							if(!matches(cldName,"",null,"undefined")){
+								var cklDateName = cldName.trim();
+								var cldItem = ""+chklstDateItem;
+								var cklDateItem = cldItem.trim();
+								var cldGroup = ""+chklstDateGroup;
+								var cklDateGroup = cldGroup.trim();
+								var cldSGroup = ""+chklstDateSubGroup;
+								var cklDateSubGroup = cldSGroup.trim();
+								var cldField = ""+chklstDateFieldName;
+								var cklDateField = cldField.trim();
+								/*
+								logDebug("inspId: " +inspId);
+								logDebug("cklDateName: " +cklDateName);
+								logDebug("cklDateItem: " +cklDateItem);
+								logDebug("cklDateGroup: " +cklDateGroup);
+								logDebug("cklDateSubGroup: " +cklDateSubGroup);
+								logDebug("cklDateField: " +cklDateField);
+								*/
+								whenSched = getGuidesheetASIValue(inspId,cklDateName,cklDateItem,cklDateGroup,cklDateSubGroup, cklDateField);
+								if(!whenSched){
+									logDebug("Error retrieving checklist item. Setting days to 30.");
+									whenSched = 30;
+								}
+							}
+							var pendOrSched = ""+pendSched;
+							if(pendOrSched.toUpperCase()=="PENDING"){
+								createPendingInspection(insNewGroup,insNewType);
+							}else{
+								//logDebug("monthDays: "+monthDays);
+								monthDays = ""+monthDays;
+								if(monthDays.toUpperCase()=="YEARS"){
+									logDebug("YEARS: " + whenSched);
+									var dtSched = dateAddMonths(sysDate,parseInt(whenSched)*12);
+								}else{
+									if(monthDays.toUpperCase()=="MONTHS"){
+										logDebug("MONTHS: " + whenSched);
+										var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+									}else{
+										calWkgDay = ""+calWkgDay;
+										if(calWkgDay.toUpperCase()=="WORKING"){
+											var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+										}else{
+											var dtSched = dateAdd(sysDate,parseInt(whenSched));
+											logDebug("WORKING: " + whenSched);
+										}
+									}
+								}
+							}
+							logDebug("dtSched: " + dtSched);
+							if(!dtSched){
+								logDebug("No scheduled date was found. Defaulting to one month");
+								dtSched=dateAddMonths(null,1);
+							}
+							sepScheduleInspectDate(insNewType,dtSched);
+							if(!matches(inspectorId,"",null,"undefined")){
+								var newInspId = getScheduledInspId(insNewType);
+								newInspId = ""+newInspId;
+								inspectorId = ""+inspectorId;
+								if(inspectorId.toUpperCase()=="AUTO"){
+									autoAssignInspection(newInspId);
+								}else{
+									if(inspectorId.toUpperCase()=="PRIOR"){
+										var lastInspid = ""+getLastInspector(sInsType);
+										if(lastInspid!=null){
+											assignInspection(newInspId, lastInspid);
+										}else{
+											assignInspection(newInspId, inspectorId);
+										}
+									}
+								}
+							}
+						}
+					}
+					// execute custom expression
+					if (!matches(actionExpression, "", null, "undefined")) {
+						actionExpression = ''+ actionExpression;
+						logDebug("Executing action expression : " + actionExpression);
+						var result = eval(actionExpression);
+						logDebug("result: " + result);
+					}
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("An error occurred in sepReSchedInspection: " + err.message);
+	logDebug(err.stack);
+}}
+
+function sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel){
+try{
+	useParCapForRpt = false;
+	if (arguments.length == 6) useParCapForRpt = arguments[5]; 
 	if(priContact){
 		var priChannel =  lookup("CONTACT_PREFERRED_CHANNEL",""+ priContact.capContact.getPreferredChannel());
 		if(!matches(priChannel, "",null,"undefined", false)){
 			if(!respectPriChannel || priChannel.indexOf("Email") > -1 || priChannel.indexOf("E-mail") > -1){
-				sepSendNotification(sysFromEmail,priContact,notName,rName);
+				sepSendNotification(sysFromEmail,priContact,notName,rName,useParCapForRpt);
 			}else{
 				if(respectPriChannel && priChannel.indexOf("Postal") > -1){
 					var addrString = "";
@@ -313,7 +573,7 @@ try{
 			}
 		}else{
 			logDebug("No primary channel found.  Defaulting to emailing the notification.");
-			sepSendNotification(sysFromEmail,priContact,notName,rName);
+			sepSendNotification(sysFromEmail,priContact,notName,rName,useParCapForRpt);
 		}
 	}else{
 		logDebug("An error occurred retrieving the contactObj for " + contactType + ": " + priContact);
@@ -326,7 +586,9 @@ try{
 function sepSendNotification(emailFrom,priContact,notName,rName){
 try{
 	var itemCap = capId;
-	if (arguments.length == 7) itemCap = arguments[6]; // use cap ID specified in args
+	if (arguments.length > 4) useParCapForRpt = arguments[4]; // use cap ID specified in args
+	if (arguments.length > 5) itemCap = arguments[5]; // use cap ID specified in args
+	logDebug("useParCapForRpt: " + useParCapForRpt);
 	var id1 = itemCap.ID1;
  	var id2 = itemCap.ID2;
  	var id3 = itemCap.ID3;
@@ -347,9 +609,23 @@ try{
 	addParameter(eParams, "$$contactEmail$$", priContact.capContact.email);
 	addParameter(eParams, "$$status$$", capStatus);
 	addParameter(eParams, "$$capType$$", cap.getCapType().getAlias());
+	var vEventName = aa.env.getValue("EventName");
+	if(vEventName.indexOf("Workflow")>-1){
+		addParameter(eParams, "$$wfComment$$", wfComment);
+	}
+	if(vEventName.indexOf("Inspection")>-1){
+		addParameter(eParams, "$$inspResultDate$$", inspResultDate);
+		addParameter(eParams, "$$inspType$$", inspType);
+		addParameter(eParams, "$$inspResult$$", inspResult);
+		addParameter(eParams, "$$inspComment$$", inspComment);
+	}
 	var priEmail = ""+priContact.capContact.getEmail();
 	//var capId4Email = aa.cap.createCapIDScriptModel(capId.getID1(), capId.getID2(), capId.getID3());
 	var rFiles = [];
+	var currCapId = capId;
+	if(useParCapForRpt){
+		capId = parCapId;
+	}
 	var rptName = ""+rName;
 	if(!matches(rptName, null, "", "undefined")){
 		var report = aa.reportManager.getReportInfoModelByName(rName);
@@ -358,34 +634,40 @@ try{
 			report.setModule(appTypeArray[0]);
 			report.setCapId(capId.getID1() + "-" + capId.getID2() + "-" + capId.getID3());
 			var rParams = aa.util.newHashMap(); 
+			logDebug("capId.getCustomID(): " + capId.getCustomID());
 			rParams.put("altId",capId.getCustomID());
+			var vEventName = aa.env.getValue("EventName");
+			if(vEventName.indexOf("Inspection")>-1){
+				rParams.put("InspectionNo",inspId);
+			}
 			report.setReportParameters(rParams);
 			report.getEDMSEntityIdModel().setAltId(capId.getCustomID());
 			var permit = aa.reportManager.hasPermission(rName,currentUserID);
 			if (permit.getOutput().booleanValue()) {
 				var reportResult = aa.reportManager.getReportResult(report);
-				if(reportResult) {
+				if(reportResult.getSuccess()) {
 					reportOutput = reportResult.getOutput();
 					var reportFile=aa.reportManager.storeReportToDisk(reportOutput);
 					reportFile=reportFile.getOutput();
 					rFiles.push(reportFile);
 					emailRpt = true;
 				}else {
-					logDebug("System failed get report: " + reportResult.getErrorType() + ":" +reportResult.getErrorMessage());
+					logDebug("System failed get report: " +rptName+": "+ reportResult.getErrorType() + ": " +reportResult.getErrorMessage());
 				}
 			} else {
-				logDebug("You have no permission.");
+				logDebug("You do not have permission to run the report " + rptName);
 			}	
 		}else{
-			logDebug("An error occurred retrieving the report: "+ report.getErrorMessage());
+			logDebug("An error occurred retrieving the report: " +rptName+": "+ report.getErrorMessage());
 		}
 	}
+	capId = currCapId;
 	if(!emailRpt){
 		rFiles = [];
 	}
 	var result = null;
-	logDebug("rName: " +rName);
-	logDebug("priEmail: " +priEmail);
+	//logDebug("rName: " +rName);
+	//logDebug("priEmail: " +priEmail);
 	result = aa.document.sendEmailAndSaveAsDocument(emailFrom, priEmail, null, notName, eParams, capIDScriptModel, rFiles);
 	if(result.getSuccess()){
 		logDebug("Sent email successfully!");
@@ -405,7 +687,7 @@ try{
 		if(sepRules[row]["Active"]=="Yes"){
 			var taskName = ""+sepRules[row]["Task Name"];
 			var taskStatus = ""+sepRules[row]["Task Status"];
-			if(!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus){
+			if((matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
 				var appMatch = true;
 				var recdType = ""+sepRules[row]["Record Type"];
 				var recdTypeArr = "" + recdType;
@@ -425,7 +707,7 @@ try{
 					logDebug("Additional Query field: " + addtlQuery);
 					var chkFilter = ""+addtlQuery;
 					if (chkFilter.length==0 ||eval(chkFilter) ) {
-						var cFld = ""+sepRules[row]["Custom Field Name"];
+						var cFld = ""+sepRules[row]["Custom Field"];
 						var custFld = cFld.trim();
 						var cVal = ""+sepRules[row]["Custom Field Value"];
 						var custVal = cVal.trim();
@@ -639,6 +921,7 @@ function sepStopWorkflow(){
 //stop workflow progress based on parameters
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
+	var workflowStopped = false;
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", appTypeArray[0]);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -657,7 +940,10 @@ try{
 						if(sepRules[row]["Active"]=="Yes"){
 							var taskName = ""+sepRules[row]["Task Name"];
 							var taskStatus = ""+sepRules[row]["Task Status"];
-							if(!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus){
+							if((matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
+								if(matches(taskName,"",null,"undefined")){
+									taskName = "Current Task";
+								}
 								var appMatch = true;
 								var recdType = ""+sepRules[row]["Record Type"];
 								var recdTypeArr = "" + recdType;
@@ -676,186 +962,196 @@ try{
 									addtlQuery = ""+sepRules[row]["Additional Query"];
 									logDebug("Additional Query field: " + addtlQuery);
 									var chkFilter = ""+addtlQuery;
-									if (chkFilter.length==0 ||eval(chkFilter) ) {
-										switch("" + sepRules[row]["Event"]){
-										case "Fees Due": 
-											var strFee = ""+ sepRules[row]["Required Elements List"];
-											var feeBal = 0;
-											var feesDue = [];
-											if(strFee.length>0){
-												var arrFee = strFee.split("|");
-												for (fee in arrFee){
-													feeBal += sepFeeBalance(arrFee[fee]);
-													if(sepFeeBalance(arrFee[fee])>0){
-														feesDue.push(arrFee[fee]);
-													}
-												}
-											}else{
-												feeBal = sepFeeBalance();
-											}
-											if(feeBal>0){
-												cancel=true;
-												showMessage=true;
-												comment( "'"+ taskName + "' cannot be set to '" + taskStatus + "' when there is an outstanding balance ($" + feeBal.toFixed(2) + ") of these fees: " );
-												if(feesDue.length==0){
-													comment("--All Fees--");
-												}else{
-													for( x in feesDue){
-														comment(feesDue[x]);
-													}
+									if (chkFilter.length > 0 && !eval(chkFilter) ) {
+										workflowStopped = true;
+										cancel=true;
+										showMessage=true;
+										comment( "'"+ chkFilter + "' must resolve to 'true' before proceeding." );
+									}
+									switch("" + sepRules[row]["Event"]){
+									case "Fees Due": 
+										var strFee = ""+ sepRules[row]["Required Elements List"];
+										var feeBal = 0;
+										var feesDue = [];
+										if(strFee.length>0 && strFee!="ALL"){
+											var arrFee = strFee.split("|");
+											for (fee in arrFee){
+												feeBal += sepFeeBalance(arrFee[fee]);
+												if(sepFeeBalance(arrFee[fee])>0){
+													feesDue.push(arrFee[fee]);
 												}
 											}
-											break;
-										case "Inspections Scheduled":
-											var inspScheduled = false;
-											var strInsp = ""+sepRules[row]["Required Elements List"];
-											var inspDue = [];
-											if(strInsp.length>0){
-												var arrInsp = strInsp.split("|");
-												for (ins in arrInsp){
-													if(checkInspectionResult(arrInsp[ins], "Scheduled") || checkInspectionResult(arrInsp[ins], "Pending")){
-														inspScheduled = true;
-														inspDue.push(arrInsp[ins]);
-													}
-												}
-											}else{
-												if(isScheduled(false)){
-													inspScheduled = true;
-												}
-											}
-											if(inspScheduled){
-												cancel=true;
-												showMessage=true;
-												comment( "'"+ taskName + "' cannot be set to '" + taskStatus + "' when these inspections are scheduled or pending: " );
-												if(inspDue.length==0){
-													comment("--All Inspections--");
-												}else{
-													for( x in inspDue){
-														comment(inspDue[x]);
-													}
-												}
-											}
-											break;
-										case "Documents Required":
-											var submittedDocList = aa.document.getDocumentListByEntity(capId,"CAP").getOutput().toArray();
-											uploadedDocs = new Array();
-											for (var i in submittedDocList ){
-												uploadedDocs[submittedDocList[i].getDocGroup() +"-"+ submittedDocList[i].getDocCategory()] = true;
-											}
-											var strDoc =  ""+ sepRules[row]["Required Elements List"];
-											var arrDoc = strDoc.split("|");
-											var retArray = [];
-											for (doc in arrDoc){
-												if(arrDoc[doc].indexOf(",")<0){
-													comment("Document List is incorrectly formatted: a group and type, separated by a comma, is required: " + strDoc);
-													return false;
-												}
-												var thisDoc = arrDoc[doc].split(",");
-												var dGroup = thisDoc[0];
-												var dType = thisDoc[1];
-												var docGroup = dGroup.trim();
-												var docType = dType.trim();
-												if(uploadedDocs[docGroup +"-"+ docType] == undefined) {	
-													var thisArray = [];
-													thisArray["docGroup"]=docGroup;
-													thisArray["docType"]=docType;
-													retArray.push(thisArray);
-												}
-											}
-											if(retArray.length>0){
-												cancel=true;
-												showMessage=true;
-												comment("'"+ taskName + "' cannot be set to '" + taskStatus + "' when these documents are required: ");
-												for( x in retArray){
-													comment(retArray[x]["docGroup"] + " - " + retArray[x]["docType"]);
-												}
-											}
-											break;
-										case "Child Records Status":
-											var canProceed = false;
-											var strChildInfo = ""+ sepRules[row]["Required Elements List"];
-											var arrChildRecs = [];
-											if(strChildInfo.length>0){
-												var arrChildRecs = strChildInfo.split("|");
-												for (ch in arrChildRecs){
-													arrThisChild = arrChildRecs[ch].split(",");
-													var arrChildren = getChildren(arrThisChild[0]);
-													var status2Chk = ""+arrThisChild[1];
-													if(status2Chk.toUpperCase()=="ANY"){
-														canProceed =- true;
-													}else{
-														var badStatus=false;
-														for(st in arrChildren){
-															var chCap = aa.cap.getCap(arrChildren[st]).getOutput();
-															if(chCap.getCapStatus().toUpperCase()!=status2Chk.toUpperCase()){
-																badStatus=true;
-															}
-														}
-														if(badStatus){
-															canProceed=false;
-														}
-													}		
-												}
-											}else{
-												canProceed=false;
-											}
-											if(!canProceed){
-												cancel=true;
-												showMessage=true;
-												comment( "'"+ taskName + "' cannot be set to '" + taskStatus + "' when either there is no child record of the type " );
-												if(feesDue.length==0){
-													comment("--All Fees--");
-												}else{
-													for( x in feesDue){
-														comment(feesDue[x]);
-													}
-												}
-											}
-											break;
-										case "Custom Fields":
-											var canProceed = true;
-											var strAsi = ""+sepRules[row]["Required Elements List"];
-											var asiBad = [];
-											if(strAsi.length>0){
-												var arrAsi = strAsi.split(",");
-												for (fld in arrAsi){
-													var thisAsi = ""+arrAsi[fld];
-													var symbols = "!=<>";
-													var validAsi = false;
-													for(var i=0,l=symbols.length;i<l;i++){
-														if(thisAsi.indexOf(symbols.charAt(i)) >-1){ 
-															validAsi = true;
-															if(thisAsi.indexOf("AInfo")<0){
-																var subIdx = thisAsi.indexOf(symbols.charAt(i));
-																var asiName = "AInfo['" + thisAsi.substr(0,subIdx) +"']"
-																var asiCompare = asiName + thisAsi.substr(subIdx, thisAsi.length);
-															}else{
-																var asiCompare = thisAsi;
-															}
-														}
-													}
-													if(!validAsi){
-														comment(thisAsi + " does not resolve to a valid query. It must be set up with a custom field name, a comparison operator (one of '>','<','==','!=', '>=', '<=') and a comparison value. No comparison is being done for this row.");
-													}else{
-														if(!eval(asiCompare)){
-															canProceed = false;
-															asiBad.push(thisAsi);
-														}
-													}
-												}
-											}else{
-												comment("The 'Required Elements List' is empty. No custom field comparisons are being made.");
-											}
-											if(!canProceed){
-												cancel=true;
-												showMessage=true;
-												comment( "'"+ taskName + "' cannot be set to '" + taskStatus + "' when these custom fields are set to these values: " );
-												for( x in asiBad){
-													comment("---" + asiBad[x] + "<br>");
-												}
-											}
-											break;
+										}else{
+											feeBal = sepFeeBalance();
 										}
+										if(feeBal>0){
+											workflowStopped = true;
+											cancel=true;
+											showMessage=true;
+											comment( taskName + " cannot be set to '" + taskStatus + "' when there is an outstanding balance ($" + feeBal.toFixed(2) + ") of these fees: " );
+											if(feesDue.length==0){
+												comment("--All Fees--");
+											}else{
+												for( x in feesDue){
+													comment(feesDue[x]);
+												}
+											}
+										}
+										break;
+									case "Inspections Scheduled":
+										var inspScheduled = false;
+										var strInsp = ""+sepRules[row]["Required Elements List"];
+										var inspDue = [];
+										if(strInsp.length>0){
+											var arrInsp = strInsp.split("|");
+											for (ins in arrInsp){
+												if(checkInspectionResult(arrInsp[ins], "Scheduled") || checkInspectionResult(arrInsp[ins], "Pending")){
+													inspScheduled = true;
+													inspDue.push(arrInsp[ins]);
+												}
+											}
+										}else{
+											if(isScheduled(false)){
+												inspScheduled = true;
+											}
+										}
+										if(inspScheduled){
+											workflowStopped = true;
+											cancel=true;
+											showMessage=true;
+											comment( taskName + " cannot be set to '" + taskStatus + "' when these inspections are scheduled or pending: " );
+											if(inspDue.length==0){
+												comment("--All Inspections--");
+											}else{
+												for( x in inspDue){
+													comment(inspDue[x]);
+												}
+											}
+										}
+										break;
+									case "Documents Required":
+										var submittedDocList = aa.document.getDocumentListByEntity(capId,"CAP").getOutput().toArray();
+										uploadedDocs = new Array();
+										for (var i in submittedDocList ){
+											uploadedDocs[submittedDocList[i].getDocGroup() +"-"+ submittedDocList[i].getDocCategory()] = true;
+										}
+										var strDoc =  ""+ sepRules[row]["Required Elements List"];
+										var arrDoc = strDoc.split("|");
+										var retArray = [];
+										for (doc in arrDoc){
+											if(arrDoc[doc].indexOf(",")<0){
+												comment("Document List is incorrectly formatted: a group and type, separated by a comma, is required: " + strDoc);
+												return false;
+											}
+											var thisDoc = arrDoc[doc].split(",");
+											var dGroup = thisDoc[0];
+											var dType = thisDoc[1];
+											var docGroup = dGroup.trim();
+											var docType = dType.trim();
+											if(uploadedDocs[docGroup +"-"+ docType] == undefined) {	
+												var thisArray = [];
+												thisArray["docGroup"]=docGroup;
+												thisArray["docType"]=docType;
+												retArray.push(thisArray);
+											}
+										}
+										if(retArray.length>0){
+											workflowStopped = true;
+											cancel=true;
+											showMessage=true;
+											comment("'"+ taskName + " cannot be set to '" + taskStatus + "' when these documents are required: ");
+											for( x in retArray){
+												comment(retArray[x]["docGroup"] + " - " + retArray[x]["docType"]);
+											}
+										}
+										break;
+									case "Child Records Status":
+										var canProceed = false;
+										var strChildInfo = ""+ sepRules[row]["Required Elements List"];
+										var arrChildRecs = [];
+										if(strChildInfo.length>0){
+											var arrChildRecs = strChildInfo.split("|");
+											for (ch in arrChildRecs){
+												arrThisChild = arrChildRecs[ch].split(",");
+												var arrChildren = getChildren(arrThisChild[0]);
+												var status2Chk = ""+arrThisChild[1];
+												if(status2Chk.toUpperCase()=="ANY"){
+													canProceed = true;
+												}else{
+													var badStatus=false;
+													for(st in arrChildren){
+														var chCap = aa.cap.getCap(arrChildren[st]).getOutput();
+														if(chCap.getCapStatus().toUpperCase()!=status2Chk.toUpperCase()){
+															badStatus=true;
+														}
+													}
+													if(badStatus){
+														canProceed=false;
+													}
+												}		
+											}
+										}else{
+											canProceed=false;
+										}
+										if(!canProceed){
+											workflowStopped = true;
+											cancel=true;
+											showMessage=true;
+											/*
+											comment( taskName  + " cannot be set to '" + taskStatus + "' when either there is no child record of the type(s) " );
+											*/
+											comment(sepRules[row]["Comment/Description"]);
+										}
+										break;
+									case "Custom Fields":
+										var canProceed = true;
+										var strAsi = ""+sepRules[row]["Required Elements List"];
+										var asiBad = [];
+										if(strAsi.length>0){
+											var arrAsi = strAsi.split(",");
+											for (fld in arrAsi){
+												var thisAsi = ""+arrAsi[fld];
+												var symbols = "!=<>";
+												var validAsi = false;
+												for(var i=0,l=symbols.length;i<l;i++){
+													if(thisAsi.indexOf(symbols.charAt(i)) >-1){ 
+														validAsi = true;
+														if(thisAsi.indexOf("AInfo")<0){
+															var subIdx = thisAsi.indexOf(symbols.charAt(i));
+															var asiName = "AInfo['" + thisAsi.substr(0,subIdx-1) +"']"
+															var asiCompare = asiName + thisAsi.substr(subIdx-1, thisAsi.length);
+														}else{
+															var asiCompare = thisAsi;
+														}
+													}
+												}
+												if(!validAsi){
+													comment(thisAsi + " does not resolve to a valid query. It must be set up with a custom field name, a comparison operator (one of '>','<','==','!=', '>=', '<=') and a comparison value. No comparison is being done for this row.");
+												}else{
+													logDebug("asiCompare: " +asiCompare);
+													if(!eval(asiCompare)){
+														logDebug("asiCompare: " + asiCompare);
+														canProceed = false;
+														asiBad.push(thisAsi);
+													}
+												}
+											}
+										}else{
+											comment("The 'Required Elements List' is empty. No custom field comparisons are being made.");
+										}
+										if(!canProceed){
+											workflowStopped = true;
+											cancel=true;
+											showMessage=true;
+											/*
+											comment( taskName  + " cannot be set to '" + taskStatus + "' when these custom fields do not pass these rules: " );
+											for( x in asiBad){
+												comment("---" + asiBad[x]);
+											}
+											*/
+											comment(sepRules[row]["Comment/Description"]);
+										}
+										break;
 									}
 								}
 							}
@@ -865,6 +1161,7 @@ try{
 			}
 		}
 	}
+	return workflowStopped;
 }catch(err){
 	logDebug("A JavaScript Error occurred: sepStopWorkflow: " + err.message);
 	logDebug(err.stack)
@@ -915,16 +1212,17 @@ try{
 				var sepScriptConfigArr = sepScriptConfig.getOutput();
 			}
 		}
-		if(sepScriptConfigArr.length>0){
+		if(sepScriptConfigArr.length>0){ 
 			for(sep in sepScriptConfigArr){
 				var cfgCapId = sepScriptConfigArr[sep].getCapID();
 				var sepRules = loadASITable("LICENSE ISSUANCE - ON WORKFLOW",cfgCapId);
+				var sysFromEmail = getAppSpecific("Agency From Email",cfgCapId);
 				if(sepRules.length>0){
 					for(row in sepRules){
 						if(sepRules[row]["Active"]=="Yes"){
 							var taskName = ""+sepRules[row]["Task Name"];
 							var taskStatus = ""+sepRules[row]["Task Status"];
-							if(!matches(taskName,"",null,"undefined" || wfTask==taskName) && wfStatus==taskStatus){
+							if((matches(taskName,"",null,"undefined") || wfTask==taskName) && wfStatus==taskStatus){
 								var appMatch = true;
 								var recdType = ""+sepRules[row]["Record Type"];
 								var recdTypeArr = "" + recdType;
@@ -952,7 +1250,7 @@ try{
 												logDebug("Parent ID not correctly formatted: " + sepRules[row]["Parent Record Type"]);
 												return false;
 											}else{
-												var parCapId = false;
+												parCapId = false;
 												var appCreateResult = aa.cap.createApp(arrParRec[0], arrParRec[1], arrParRec[2], arrParRec[3],capName);
 												logDebug("creating cap " +arrParRec);
 												if (appCreateResult.getSuccess()){
@@ -976,6 +1274,7 @@ try{
 												}											}
 											if(parCapId){
 												var newLPType = ""+sepRules[row]["Create LP Type"];
+												logDebug("newLPType: " + newLPType);
 												if(!matches(newLPType, "",null,"undefined")){
 													var newLPContact = getContactObj(capId,"Applicant");
 													if(newLPContact){
@@ -1009,6 +1308,32 @@ try{
 												licEditExpInfo(newAppStatus, expDate);
 												updateAppStatus(newAppStatus, "Updated via sepIssueLicenseWorkflow.");
 												capId = currCapId;
+												if(""+sepRules[row]["Copy Address/Parcel/Owner"]=="Yes"){
+													copyAddresses(capId, parCapId);
+													copyParcels(capId, parCapId);
+													var PInfo=[];
+													loadParcelAttributes(PInfo);
+													attributesMap = [];
+													for(p in PInfo){
+														var tAttr = ""+p.replace("ParcelAttribute.","");
+														attributesMap[tAttr]=PInfo[p];
+													}
+													var capParcelResult = aa.parcel.getParcelandAttribute(parCapId,null);
+													if (capParcelResult.getSuccess()){ 
+														var Parcels = capParcelResult.getOutput().toArray(); 
+														for (zz in Parcels){
+															var ParcelValidatedNumber = Parcels[zz].getParcelNumber();
+															updateParcelAttributes(attributesMap, ParcelValidatedNumber, parCapId);
+														}
+													}else{ 
+														logDebug("**ERROR: getting parcels by cap ID: " + capParcelResult.getErrorMessage());
+													}
+													updateRefParcelToCap(parCapId);
+													copyOwner(capId, parCapId);
+												}
+												if(""+sepRules[row]["Copy Lic Prof"]=="Yes"){
+													copyLicensedProf(capId, parCapId);
+												}
 												if(""+sepRules[row]["Copy Custom Fields/Lists"]=="ALL"){
 													copyAppSpecific(parCapId);
 													copyASITables(capId, parCapId);
@@ -1052,27 +1377,74 @@ try{
 													aa.continuingEducation.copyContEducationList(capId, parCapId);
 												}
 												var notName = "" + sepRules[row]["Notification Name"];
+												var rName = "" + sepRules[row]["Report Name"];
 												if(!matches(notName, "","undefined",null)){
 													var cntType = ""+sepRules[row]["Contacts Receiving Notice"];
 													if(cntType.indexOf(",")>-1){
 														var arrType = cntType.split(",");
 														for(con in arrType){
 															var priContact = getContactObj(capId,arrType[con]);
-															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N",true);
 														}
 													}else{
 														if(cntType.toUpperCase()=="ALL"){
 															var arrType = getContactObjs(capId);
 															for(con in arrType){
-																sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail);
+																sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, "N",true);
+															}
+															var arrLPType = getLicensedProfessionalObjectsByRecord(capId);
+															for(con in arrLPType){
+																sepProcessContactsForNotif(arrLPType[con], notName, rName, sysFromEmail, "N",true);
 															}
 														}else{
 															var priContact = getContactObj(capId,cntType);
-															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail);
+															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N",true);
 														}						
 													}						
 												}else{
 													logDebug("No notification name. No email sent.");
+												}
+												if(!matches(sepRules[row]["Inspection Group"], "",null,"undefined")){
+													var monthDays = ""+sepRules[row]["Months/Days"];
+													var pendSched = ""+sepRules[row]["Pending/Schedule"];
+													var whenSched = ""+sepRules[row]["When to Schedule"];
+													var calWkgDay = ""+sepRules[row]["Calendar/Work Days"];
+													var sInsGroup = ""+sepRules[row]["Inspection Group"];
+													var sInsType = ""+sepRules[row]["Inspection Type"];
+													var inspectorId = ""+sepRules[row]["Inspector"];
+													if(pendSched.toUpperCase()=="PENDING"){
+														createPendingInspection(sInsGroup,sInsType,parCapId);
+													}else{
+														if(monthDays.toUpperCase()=="MONTHS"){
+															var dtSched = dateAddMonths(sysDate,parseInt(whenSched));
+														}else{
+															if(calWkgDay.toUpperCase()=="WORKING"){
+																var dtSched = dateAdd(sysDate,parseInt(whenSched),true);
+															}else{
+																var dtSched = dateAdd(sysDate,parseInt(whenSched));
+															}
+														}
+														var currCapId = capId;
+														capId = parCapId;
+														sepScheduleInspectDate(sInsType,dtSched);
+														if(!matches(inspectorId,"",null,"undefined")){
+															var inspId = getScheduledInspId(sInsType);
+															inspId = ""+inspId;
+															if(inspectorId.toUpperCase()=="AUTO"){
+																autoAssignInspection(inspId);
+															}else{
+																if(inspectorId.toUpperCase()=="PRIOR"){
+																	var lastInspid = ""+getLastInspector(sInsType);
+																	if(lastInspid!=null){
+																		assignInspection(inspId, lastInspid);
+																	}else{
+																		assignInspection(inspId, inspectorId);
+																	}
+																}
+															}
+														}
+														capId = currCapId;
+													}
 												}
 											}
 										}
@@ -1083,7 +1455,8 @@ try{
 									logDebug("sepIssueLicenseWorkflow: No app match: " + recdTypeArr);
 								}
 							}else{
-								logDebug("sepIssueLicenseWorkflow: no task/status match: " + taskName + "/" + taskStatus);
+								//logDebug("sepIssueLicenseWorkflow: no task/status match: " + taskName + "/" + taskStatus);
+								
 							}
 						}
 					}
@@ -1095,6 +1468,7 @@ try{
 	logDebug("A JavaScript Error occurred: sepIssueLicenseWorkflow:  " + err.message);
 	logDebug(err.stack)
 }}
+
 
 //copy of copyAppSpecific and copyASITables except optional param is include not ignore
 function copyAppSpecificInclude(newCap){ // copy all App Specific info into new Cap, 1 optional parameter for ignoreArr
@@ -1206,6 +1580,642 @@ try{
 	logDebug("A JavaScript Error occurred: sepRunBackup:  " + err.message);
 	logDebug(err.stack)
 }}
+
+function getGuidesheetASIValue(inspId,gName,gItem,asiGroup,asiSubGroup, asiLabel) {
+try{
+	//updates the guidesheet ID to nGuideSheetID if not currently populated
+	//optional capId
+	var itemCap = capId;
+	if (arguments > 6) itemCap = arguments[7];
+	var r = aa.inspection.getInspections(itemCap);
+	if (r.getSuccess()) {
+		var inspArray = r.getOutput();
+		for (i in inspArray) {
+			if (inspArray[i].getIdNumber() == inspId) {
+				var inspModel = inspArray[i].getInspection();
+				var gs = inspModel.getGuideSheets();
+				if (gs) {
+					for(var i=0;i< gs.size();i++) {
+						var guideSheetObj = gs.get(i);
+						if (guideSheetObj && gName.toUpperCase() == guideSheetObj.getGuideType().toUpperCase()) {
+							var guidesheetItem = guideSheetObj.getItems();
+							for(var j=0;j< guidesheetItem.size();j++) {
+								var item = guidesheetItem.get(j);
+								//1. Filter Guide Sheet items by Guide sheet item name && ASI group code
+								if(item && gItem == item.getGuideItemText() && asiGroup == item.getGuideItemASIGroupName()) {
+									var ASISubGroups = item.getItemASISubgroupList();
+									if(ASISubGroups) {
+										//2. Filter ASI sub group by ASI Sub Group name
+										for(var k=0;k< ASISubGroups.size();k++) {
+											var ASISubGroup = ASISubGroups.get(k);
+											if(ASISubGroup && ASISubGroup.getSubgroupCode() == asiSubGroup) {
+												var ASIModels =  ASISubGroup.getAsiList();
+												if(ASIModels) {
+													//3. Filter ASI by ASI name
+													for( var m = 0; m< ASIModels.size();m++) {
+														var ASIModel = ASIModels.get(m);
+														if(ASIModel && ASIModel.getAsiName() == asiLabel) {
+															//logDebug("Change ASI value from:"+ ASIModel.getAttributeValue() +" to "+newValue);
+															//4. Reset ASI value
+															//ASIModel.setAttributeValue(newValue);		
+															return ASIModel.getAttributeValue();
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}							
+						}
+					}
+				} else {
+					// if there are guidesheets
+					logDebug("No guidesheets for this inspection");
+					return false;
+				}
+			}
+		}
+	} else {
+		logDebug("No inspections on the record");
+		return false;
+	}
+	logDebug("No checklist item found.");
+	return false;
+}catch(err){
+	logDebug("A JavaScript Error occurred: getGuidesheetASIValue: " + err.message);
+	logDebug(err.stack);
+}}
+
+function sepScheduleInspectDate(iType,DateToSched){ // optional inspector ID.
+// DQ - Added Optional 4th parameter inspTime Valid format is HH12:MIAM or AM (SR5110)
+// DQ - Added Optional 5th parameter inspComm
+try{
+	var inspectorObj = null;
+	var inspTime = null;
+	var inspComm = "Scheduled via Script";
+	if (arguments.length >= 3)
+		if (arguments[2] != null)
+			{
+			var inspRes = aa.person.getUser(arguments[2]);
+			if (inspRes.getSuccess())
+				inspectorObj = inspRes.getOutput();
+			}
+
+        if (arguments.length >= 4)
+            if(arguments[3] != null)
+		        inspTime = arguments[3];
+
+		if (arguments.length >= 5)
+		    if(arguments[4] != null)
+		        inspComm = arguments[4];
+
+	var schedRes = aa.inspection.scheduleInspection(capId, inspectorObj, aa.date.parseDate(DateToSched), inspTime, iType, inspComm)
+
+	if (schedRes.getSuccess())
+		logDebug("Successfully scheduled inspection : " + iType + " for " + DateToSched);
+	else{
+		if(schedRes.getErrorMessage()=="Can't get the Service Provider Code from the I18NModel."){
+			logDebug("Ignoring I18NMODEL error. Successfully scheduled inspection : " + iType + " for " + DateToSched);
+		}else{
+			logDebug( "**ERROR: adding scheduling inspection (" + iType + "): " + schedRes.getErrorMessage());
+		}
+	}
+}catch(err){
+	logDebug("A JavaScript Error occurred: sepScheduleInspectDate: " + err.message);
+	logDebug(err.stack);
+}}
+ 
+function sepRenewLicenseWorkflow(){
+try{
+	//see if any records are set up--module can be specific or "ALL", look for both
+	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", appTypeArray[0]);
+	if(sepScriptConfig.getSuccess()){
+		var sepScriptConfigArr = sepScriptConfig.getOutput();
+		if(sepScriptConfigArr.length<1){
+			var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", "ALL");
+			if(sepScriptConfig.getSuccess()){
+				var sepScriptConfigArr = sepScriptConfig.getOutput();
+			}
+		}
+		if(sepScriptConfigArr.length>0){ 
+			for(sep in sepScriptConfigArr){
+				var cfgCapId = sepScriptConfigArr[sep].getCapID();
+				var sepRules = loadASITable("LICENSE RENEWAL - ON WORKFLOW",cfgCapId);
+				var sysFromEmail = getAppSpecific("Agency From Email",cfgCapId);
+				if(sepRules.length>0){
+					for(row in sepRules){
+						if(sepRules[row]["Active"]=="Yes"){
+							var taskName = ""+sepRules[row]["Task Name"];
+							var taskStatus = ""+sepRules[row]["Task Status"];
+							var fndTaskStatus =false;
+							if(taskStatus.indexOf(",")>-1){
+								var arrTaskStatus = taskStatus.split(",");
+								if(exists(wfStatus,taskStatus)){
+									fndTaskStatus = true;
+								}
+							}else{
+								if(wfStatus==taskStatus){
+									fndTaskStatus = true;
+								}
+							}
+							//logDebug("fndTaskStatus: " + fndTaskStatus);
+							if((!matches(taskName,"",null,"undefined") || wfTask==taskName) && fndTaskStatus){
+								var appMatch = true;
+								var recdType = ""+sepRules[row]["Record Type"];
+								var recdTypeArr = "" + recdType;
+								var arrAppType = recdTypeArr.split("/");
+								if (arrAppType.length != 4){
+									logDebug("The record type is incorrectly formatted: " + recdType);
+									return false;
+								}else{
+									for (xx in arrAppType){
+										if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+											appMatch = false;
+										}
+									}
+								}
+								if (appMatch){
+									var currCapId = capId;
+									var addtlQuery = ""+sepRules[row]["Additional Query"];
+									logDebug("Additional Query field: " + addtlQuery);
+									var chkFilter = ""+addtlQuery;
+									if (chkFilter.length==0 ||eval(chkFilter) ) {
+										logDebug("eval(chkFilter): " + eval(chkFilter));
+										if(!matches(sepRules[row]["Parent Record Type"], "",null,"undefined")){
+											var updParentRecd = ""+sepRules[row]["Update Parent Record"].substring(0, 1).toUpperCase().equals("Y");
+											if(updParentRecd){
+												var parCapId = getParentCapID4Renewal();
+												if(!parCapId){
+													var parCapId = getParent();
+												}
+											}
+											if(!parCapId){
+												logDebug("Not processing due to no parent record being found.");
+												continue;
+											}else{
+												capId = parCapId;
+												if(""+sepRules[row]["Copy Custom Fields/Lists"]=="ALL"){
+													copyAppSpecific(parCapId);
+													copyASITables(capId, parCapId);
+													logDebug("Copied all ASI/T.");
+												}else{
+													if(!matches(""+sepRules[row]["Copy Custom Fields/Lists"],"",null,"undefined")){
+														var copyList = ""+sepRules[row]["Copy Custom Fields/Lists"];
+														var arrCopy = [];
+														if(copyList.indexOf("|")>-1){
+															arrCopy = copyList.split("|");
+														}else{
+															arrCopy.push(copyList);
+														}
+														copyAppSpecificInclude(parCapId,arrCopy);
+														copyASITablesInclude(capId, parCapId,arrCopy);
+													}
+												}
+											}
+										}
+										var yrsMosDays = ""+sepRules[row]["Years/Months/Days"];
+										if(!matches(yrsMosDays,"",null,"undefined")){
+											var b1ExpResult = aa.expiration.getLicensesByCapID(capId)
+											if (b1ExpResult.getSuccess()){
+												var b1Exp = b1ExpResult.getOutput();
+												var tmpDate = b1Exp.getExpDate();
+												var expDateYear = tmpDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
+												var expDate = dateFormatted(tmpDate.getMonth(), tmpDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
+												var expDate = parseFloat(sepRules[row]["When to Expire"]);
+												if(yrsMosDays.toUpperCase()=="YEARS"){
+													var dtSched = dateAddMonths(tmpDate,parseInt(expDate)*12);
+													dtSched = dateAdd(dtSched,1);
+												}else{
+													if(yrsMosDays.toUpperCase()=="MONTHS"){
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}else{
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}
+												}
+											}
+										}else{
+											logDebug("Need to pick among years, months, and days");
+										}
+										if(matches(""+sepRules[row]["New App Status"],"",null,"undefined")){
+											var newAppStatus = "Active";
+										}else{
+											var newAppStatus = ""+sepRules[row]["New App Status"];
+										}
+										licEditExpInfo(newAppStatus, dtSched);
+										updateAppStatus(newAppStatus, "Updated via sepRenewLicenseWorkflow.");
+										var notName = "" + sepRules[row]["Notification Name"];
+										var rName = "" + sepRules[row]["Report Name"];
+										if(!matches(notName, "","undefined",null)){
+											var cntType = ""+sepRules[row]["Contacts Receiving Notice"];
+											if(cntType.indexOf(",")>-1){
+												var arrType = cntType.split(",");
+												for(con in arrType){
+													var priContact = getContactObj(capId,arrType[con]);
+													sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N");
+												}
+											}else{
+												if(cntType.toUpperCase()=="ALL"){
+													var arrType = getContactObjs(capId);
+													for(con in arrType){
+														sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, "N");
+													}
+												}else{
+													var priContact = getContactObj(capId,cntType);
+													sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N");
+												}						
+											}						
+										}else{
+											logDebug("No notification name. No email sent.");
+										}
+										var actionExpression = ""+sepRules["Addtl Action to Perform"]; 
+										// execute custom expression
+										if (actionExpression.length > 0) {
+											feeSeqList = [];
+											paymentPeriodList = [];
+											logDebug("Executing action expression : " + actionExpression);
+											var result = eval(actionExpression);
+										}
+									}else{
+										logDebug("sepRenewLicenseWorkflow: Check filter resolved to false: " + chkFilter);
+									}
+									capId = currCapId;
+								}else{
+									logDebug("sepRenewLicenseWorkflow: No app match: " + recdTypeArr);
+								}
+							}else{
+								//logDebug("sepRenewLicenseWorkflow: no task/status match: " + taskName + "/" + taskStatus);
+								
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("A JavaScript Error occurred: sepRenewLicenseWorkflow:  " + err.message);
+	logDebug(err.stack)
+}}
+
+function sepRenewLicensePayment(){
+try{
+	//see if any records are set up--module can be specific or "ALL", look for both
+	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", appTypeArray[0]);
+	if(sepScriptConfig.getSuccess()){
+		var sepScriptConfigArr = sepScriptConfig.getOutput();
+		if(sepScriptConfigArr.length<1){
+			var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", "ALL");
+			if(sepScriptConfig.getSuccess()){
+				var sepScriptConfigArr = sepScriptConfig.getOutput();
+			}
+		}
+		if(sepScriptConfigArr.length>0){ 
+			for(sep in sepScriptConfigArr){
+				var cfgCapId = sepScriptConfigArr[sep].getCapID();
+				var sepRules = loadASITable("LICENSE RENEWAL - ON PAYMENT",cfgCapId);
+				var sysFromEmail = getAppSpecific("Agency From Email",cfgCapId);
+				var balNotZero=false;
+				if(sepRules.length>0){
+					for(row in sepRules){
+						if(sepRules[row]["Active"]=="Yes"){
+							var balDueMustBeZero = ""+sepRules[row]["Balance Due Must Be Zero"];
+							var balDueMustBeZero = ""+balDueMustBeZero.substring(0, 1).toUpperCase().equals("Y");
+							if(balDueMustBeZero && balanceDue<=0){
+								var appMatch = true;
+								var recdType = ""+sepRules[row]["Record Type"];
+								var recdTypeArr = "" + recdType;
+								var arrAppType = recdTypeArr.split("/");
+								if (arrAppType.length != 4){
+									logDebug("The record type is incorrectly formatted: " + recdType);
+									return false;
+								}else{
+									for (xx in arrAppType){
+										if (!arrAppType[xx].equals(appTypeArray[xx]) && !arrAppType[xx].equals("*")){
+											appMatch = false;
+										}
+									}
+								}
+								if (appMatch){
+									var currCapId = capId;
+									var addtlQuery = ""+sepRules[row]["Additional Query"];
+									logDebug("Additional Query field: " + addtlQuery);
+									var chkFilter = ""+addtlQuery;
+									if (chkFilter.length==0 ||eval(chkFilter) ) {
+										logDebug("eval(chkFilter): " + eval(chkFilter));
+										if(!matches(sepRules[row]["Parent Record Type"], "",null,"undefined")){
+											var updParentRecd = ""+sepRules[row]["Update Parent Record"].substring(0, 1).toUpperCase().equals("Y");
+											if(updParentRecd){
+												var parCapId = getParentCapID4Renewal();
+												if(!parCapId){
+													var parCapId = getParent();
+												}
+											}
+											if(!parCapId){
+												logDebug("Not processing due to no parent record being found.");
+												continue;
+											}else{
+												capId = parCapId;
+												if(""+sepRules[row]["Copy Custom Fields/Lists"]=="ALL"){
+													copyAppSpecific(parCapId);
+													copyASITables(capId, parCapId);
+													logDebug("Copied all ASI/T.");
+												}else{
+													if(!matches(""+sepRules[row]["Copy Custom Fields/Lists"],"",null,"undefined")){
+														var copyList = ""+sepRules[row]["Copy Custom Fields/Lists"];
+														var arrCopy = [];
+														if(copyList.indexOf("|")>-1){
+															arrCopy = copyList.split("|");
+														}else{
+															arrCopy.push(copyList);
+														}
+														copyAppSpecificInclude(parCapId,arrCopy);
+														copyASITablesInclude(capId, parCapId,arrCopy);
+													}
+												}
+											}
+										}
+										var taskName = ""+sepRules[row]["Task Name"];
+										var taskStatus = ""+sepRules[row]["New Task Status"];
+										if(!matches(taskName,"",null,"undefined") && !matches(taskStatus,"",null,"undefined")){
+											updateTask(taskName, taskStatus, "Updated via script", "");
+										}
+										var yrsMosDays = ""+sepRules[row]["Years/Months/Days"];
+										if(!matches(yrsMosDays,"",null,"undefined")){
+											var b1ExpResult = aa.expiration.getLicensesByCapID(capId)
+											if (b1ExpResult.getSuccess()){
+												var b1Exp = b1ExpResult.getOutput();
+												var tmpDate = b1Exp.getExpDate();
+												var expDateYear = tmpDate.getYear()+parseInt(sepRules[row]["Expiration - Year(s)"]);
+												var expDate = dateFormatted(tmpDate.getMonth(), tmpDate.getDayOfMonth(), expDateYear, "MM/DD/YYYY");
+												var expDate = parseFloat(sepRules[row]["When to Expire"]);
+												if(yrsMosDays.toUpperCase()=="YEARS"){
+													var dtSched = dateAddMonths(tmpDate,parseInt(expDate)*12);
+													dtSched = dateAdd(dtSched,1);
+												}else{
+													if(yrsMosDays.toUpperCase()=="MONTHS"){
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}else{
+														var dtSched = dateAdd(tmpDate,parseInt(expDate));
+														dtSched = dateAdd(dtSched,1);
+													}
+												}
+											}
+										}else{
+											logDebug("Need to pick among years, months, and days");
+										}
+										if(matches(""+sepRules[row]["New App Status"],"",null,"undefined")){
+											var newAppStatus = "Active";
+										}else{
+											var newAppStatus = ""+sepRules[row]["New App Status"];
+										}
+										licEditExpInfo(newAppStatus, dtSched);
+										updateAppStatus(newAppStatus, "Updated via sepRenewLicensePayment.");
+										var notName = "" + sepRules[row]["Notification Name"];
+										var rName = "" + sepRules[row]["Report Name"];
+										if(!matches(notName, "","undefined",null)){
+											var cntType = ""+sepRules[row]["Contacts Receiving Notice"];
+											if(cntType.indexOf(",")>-1){
+												var arrType = cntType.split(",");
+												for(con in arrType){
+													var priContact = getContactObj(capId,arrType[con]);
+													sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N");
+												}
+											}else{
+												if(cntType.toUpperCase()=="ALL"){
+													var arrType = getContactObjs(capId);
+													for(con in arrType){
+														sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, "N");
+													}
+												}else{
+													var priContact = getContactObj(capId,cntType);
+													sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N");
+												}						
+											}						
+										}else{
+											logDebug("No notification name. No email sent.");
+										}
+										var actionExpression = ""+sepRules["Addtl Action to Perform"]; 
+										// execute custom expression
+										if (actionExpression.length > 0) {
+											feeSeqList = [];
+											paymentPeriodList = [];
+											logDebug("Executing action expression : " + actionExpression);
+											var result = eval(actionExpression);
+										}
+									}else{
+										logDebug("sepRenewLicensePayment1: Check filter resolved to false: " + chkFilter);
+									}
+									capId = currCapId;
+								}else{
+									logDebug("sepRenewLicensePayment1: No app match: " + recdTypeArr);
+								}
+							}else{
+								balNotZero=true;
+							}
+						}
+					}
+				}
+				if(balNotZero){
+					showMessage=true;
+					comment("Balance due is $" + balanceDue.toFixed(2) + ".  License/Permit will not be issued.");
+				}
+			}
+		}
+	}
+}catch(err){
+	logDebug("A JavaScript Error occurred: sepRenewLicensePayment:  " + err.message);
+	logDebug(err.stack)
+}}
+
+function getRenewalCapByParentCapIDForInComplete(parentCapid){
+try{
+	if (parentCapid == null || aa.util.instanceOfString(parentCapid)){
+		return false;
+	}
+	var result = aa.cap.getProjectByMasterID(parentCapid, "Renewal", "Incomplete");
+	if(result.getSuccess()){
+		projectScriptModels = result.getOutput();
+		if (projectScriptModels == null || projectScriptModels.length == 0){
+			logDebug("ERROR: Failed to get renewal CAP by parent CAPID(" + parentCapid + ") for review");
+			return false;
+		}
+		projectScriptModel = projectScriptModels[0];
+		return projectScriptModel;
+	}else{
+	  logDebug("ERROR: Failed to get renewal CAP by parent CAP(" + parentCapid + ") for review: " + result.getErrorMessage());
+	  return false;
+	}
+}catch (err){
+	logDebug("A JavaScript Error occurred in getRenewalCapByParentCapIDForInComplete:  " + err.message);
+	logDebug(err.stack)
+}}
+
+//start: corrected standard functions
+function doScriptActions() {
+	if (typeof(appTypeArray) == "object") {
+		include(prefix + ":*/*/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/*/*");
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/" + appTypeArray[2] + "/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/" + appTypeArray[2] + "/*");
+		include(prefix + ":" + appTypeArray[0] + "/*/" + appTypeArray[2] + "/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/*/*/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/*/" + appTypeArray[3]);
+		include(prefix + ":" + appTypeArray[0] + "/" + appTypeArray[1] + "/" + appTypeArray[2] + "/" + appTypeArray[3]);
+	}
+}
+
+function addFee(fcode, fsched, fperiod, fqty, finvoice){
+try{
+	// Updated Script will return feeSeq number or null if error encountered (SR5112)
+	var feeCap = capId;
+	var feeCapMessage = "";
+	var feeSeq_L = new Array(); // invoicing fee for CAP in args
+	var paymentPeriod_L = new Array(); // invoicing pay periods for CAP in args
+	var feeSeq = null;
+	if (arguments.length > 5) {
+		feeCap = arguments[5]; // use cap ID specified in args
+		feeCapMessage = " to specified CAP";
+	}
+	assessFeeResult = aa.finance.createFeeItem(feeCap, fsched, fcode, fperiod, fqty);
+	if (assessFeeResult.getSuccess()) {
+		feeSeq = assessFeeResult.getOutput();
+		logDebug("Successfully added Fee " + fcode + ", Qty " + fqty + feeCapMessage);
+		logDebug("The assessed fee Sequence Number " + feeSeq + feeCapMessage);
+		if (finvoice == "Y" && arguments.length == 5){
+			feeSeqList.push(feeSeq);
+			paymentPeriodList.push(fperiod);
+			var invoiceResult_L = aa.finance.createInvoice(feeCap, feeSeqList, paymentPeriodList);
+			if (invoiceResult_L.getSuccess()){
+				logDebug("Invoicing assessed fee items" + sepMsg  + feeCapMessage + " is successful.");
+			}else{
+				logDebug("**ERROR: Invoicing the fee items assessed" + feeCapMessage + " was not successful.  Reason: " + invoiceResult.getErrorMessage());
+			}
+		}
+		if (finvoice == "Y" && arguments.length > 5) {
+			feeSeq_L.push(feeSeq);
+			paymentPeriod_L.push(fperiod);
+			var invoiceResult_L = aa.finance.createInvoice(feeCap, feeSeq_L, paymentPeriod_L);
+			if (invoiceResult_L.getSuccess())
+				logDebug("Invoicing assessed fee items" + feeCapMessage + " is successful.");
+			else
+				logDebug("**ERROR: Invoicing the fee items assessed" + feeCapMessage + " was not successful.  Reason: " + invoiceResult.getErrorMessage());
+		}
+		updateFeeItemInvoiceFlag(feeSeq, finvoice);
+	}else {
+		logDebug("**ERROR: assessing fee (" + fcode + "): " + assessFeeResult.getErrorMessage());
+		feeSeq = null;
+	}
+	return feeSeq;
+}catch(err){
+	logDebug("An error occurred in addFee: " + err.message);
+	logDebug(err.stack);
+}}
+
+//Function will copy all owners from source CAP (sCapID) to target CAP (tCapId)
+function copyOwner(sCapID, tCapID){
+try{
+	var ownrReq = aa.owner.getOwnerByCapId(sCapID);
+	if(ownrReq.getSuccess()){
+		var ownrObj = ownrReq.getOutput();
+		for (xx in ownrObj){
+			ownrObj[xx].setCapID(tCapID);
+			aa.owner.createCapOwnerWithAPOAttribute(ownrObj[xx]);
+			logDebug("Copied Owner: " + sepMsg + ownrObj[xx].getOwnerFullName());
+		}
+	}else{
+		logDebug("Error Copying Owner : " + ownrObj.getErrorType() + " : " + ownrObj.getErrorMessage());
+	}
+}catch(err){
+	logDebug("An error occurred in copyOwner: " + err.message);
+	logDebug(err.stack);
+}}
+
+function updateParcelAttributes(attributesMap, parcelNumber) {
+try{
+	var itemCap = capId;
+	if(arguments.length>2) itemCap=arguments[2];
+	recordParcelsArray = aa.parcel.getParcelandAttribute(itemCap, null);
+	if (recordParcelsArray.getSuccess()) {
+		recordParcelsArray = recordParcelsArray.getOutput().toArray();
+	}
+	if (recordParcelsArray != null) {
+		for (p in recordParcelsArray) {
+			var parcelScriptModel = recordParcelsArray[p];
+			var parcelNo = parcelScriptModel.getParcelNumber();
+			//find parcel to update
+			if (!parcelNo.equals(parcelNumber)) {
+				continue;
+			}
+			var attributes = parcelScriptModel.getParcelAttribute();
+			if (attributes == null) {
+				continue;
+			}
+			logDebug('here: ' + attributes.size());
+			var changed = false;
+			//Update Attributes:
+			for (var k = 0; k < attributes.size(); k++) {
+				var attributeModel = attributes.get(k);
+				var attrName = attributeModel.getB1AttributeName();
+				logDebug("attrName:  " + attrName);
+				for (atr in attributesMap) {
+					logDebug("atr: + " + atr);
+					if (attrName.equalsIgnoreCase(atr)) {
+						attributeModel.setB1AttributeValue(attributesMap[atr]);
+						changed = true;
+						break;
+					}//if match
+				}//for all in ValuesMap
+			}//for all attributes in scriptParcelModel
+			logDebug("changed: " + changed);
+			if (changed) {
+				//Update Parcel:
+				var capParcelModel = aa.parcel.getCapParcelModel().getOutput();
+				capParcelModel.setCapIDModel(itemCap);
+				capParcelModel.setParcelNo(parcelNo);
+				capParcelModel.setParcelModel(parcelScriptModel);
+				var updateResult = aa.parcel.updateDailyParcelWithAPOAttribute(capParcelModel);
+			}else{//changed
+				arrThisRecd = aa.parcel.getParcelandAttribute(capId, null);
+				if (arrThisRecd.getSuccess()) {
+					arrThisRecd = arrThisRecd.getOutput().toArray();
+					var tParcelScriptModel = arrThisRecd[p];
+					var tParcelNo = tParcelScriptModel.getParcelNumber();
+					//find parcel to update
+					var tAttributes = tParcelScriptModel.getParcelAttribute();
+					parcelScriptModel.setParcelAttribute(tAttributes);
+					var capParcelModel = aa.parcel.getCapParcelModel().getOutput();
+					capParcelModel.setCapIDModel(itemCap);
+					capParcelModel.setParcelNo(parcelNo);
+					capParcelModel.setParcelModel(parcelScriptModel);
+					var updateResult = aa.parcel.updateDailyParcelWithAPOAttribute(capParcelModel);
+					if(updateResult.getSuccess()){
+						logDebug("Parcel Attributes updated successfully");
+					}else{
+						logDebug("Error updating parcel attributes: " + updateResult.getErrorMessage());
+					}
+				}
+			}
+		}//for all parcels attached to record
+		return true;
+	} else {
+		logDebug("**INFO No parcels found for cap " + itemCap);
+		return false;
+	}
+	return false;
+}catch (err){
+	logDebug("A JavaScript Error occurred in updateParcelAttributes:  " + err.message);
+	logDebug(err.stack)
+}}
+
+
+
+//end corrected standard functions 
+
 
 
 //INCLUDES_SEP_CUSTOM END
