@@ -539,7 +539,7 @@ try{
 function sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel){
 try{
 	useParCapForRpt = false;
-	if (arguments.length == 6) useParCapForRpt = arguments[6]; // use cap ID specified in args
+	if (arguments.length == 6) useParCapForRpt = arguments[5]; 
 	if(priContact){
 		var priChannel =  lookup("CONTACT_PREFERRED_CHANNEL",""+ priContact.capContact.getPreferredChannel());
 		if(!matches(priChannel, "",null,"undefined", false)){
@@ -588,6 +588,7 @@ try{
 	var itemCap = capId;
 	if (arguments.length > 4) useParCapForRpt = arguments[4]; // use cap ID specified in args
 	if (arguments.length > 5) itemCap = arguments[5]; // use cap ID specified in args
+	logDebug("useParCapForRpt: " + useParCapForRpt);
 	var id1 = itemCap.ID1;
  	var id2 = itemCap.ID2;
  	var id3 = itemCap.ID3;
@@ -633,7 +634,12 @@ try{
 			report.setModule(appTypeArray[0]);
 			report.setCapId(capId.getID1() + "-" + capId.getID2() + "-" + capId.getID3());
 			var rParams = aa.util.newHashMap(); 
+			logDebug("capId.getCustomID(): " + capId.getCustomID());
 			rParams.put("altId",capId.getCustomID());
+			var vEventName = aa.env.getValue("EventName");
+			if(vEventName.indexOf("Inspection")>-1){
+				rParams.put("InspectionNo",inspId);
+			}
 			report.setReportParameters(rParams);
 			report.getEDMSEntityIdModel().setAltId(capId.getCustomID());
 			var permit = aa.reportManager.hasPermission(rName,currentUserID);
@@ -1305,6 +1311,23 @@ try{
 												if(""+sepRules[row]["Copy Address/Parcel/Owner"]=="Yes"){
 													copyAddresses(capId, parCapId);
 													copyParcels(capId, parCapId);
+													var PInfo=[];
+													loadParcelAttributes(PInfo);
+													attributesMap = [];
+													for(p in PInfo){
+														var tAttr = ""+p.replace("ParcelAttribute.","");
+														attributesMap[tAttr]=PInfo[p];
+													}
+													var capParcelResult = aa.parcel.getParcelandAttribute(parCapId,null);
+													if (capParcelResult.getSuccess()){ 
+														var Parcels = capParcelResult.getOutput().toArray(); 
+														for (zz in Parcels){
+															var ParcelValidatedNumber = Parcels[zz].getParcelNumber();
+															updateParcelAttributes(attributesMap, ParcelValidatedNumber, parCapId);
+														}
+													}else{ 
+														logDebug("**ERROR: getting parcels by cap ID: " + capParcelResult.getErrorMessage());
+													}
 													updateRefParcelToCap(parCapId);
 													copyOwner(capId, parCapId);
 												}
@@ -2111,6 +2134,86 @@ try{
 	logDebug("An error occurred in copyOwner: " + err.message);
 	logDebug(err.stack);
 }}
+
+function updateParcelAttributes(attributesMap, parcelNumber) {
+try{
+	var itemCap = capId;
+	if(arguments.length>2) itemCap=arguments[2];
+	recordParcelsArray = aa.parcel.getParcelandAttribute(itemCap, null);
+	if (recordParcelsArray.getSuccess()) {
+		recordParcelsArray = recordParcelsArray.getOutput().toArray();
+	}
+	if (recordParcelsArray != null) {
+		for (p in recordParcelsArray) {
+			var parcelScriptModel = recordParcelsArray[p];
+			var parcelNo = parcelScriptModel.getParcelNumber();
+			//find parcel to update
+			if (!parcelNo.equals(parcelNumber)) {
+				continue;
+			}
+			var attributes = parcelScriptModel.getParcelAttribute();
+			if (attributes == null) {
+				continue;
+			}
+			logDebug('here: ' + attributes.size());
+			var changed = false;
+			//Update Attributes:
+			for (var k = 0; k < attributes.size(); k++) {
+				var attributeModel = attributes.get(k);
+				var attrName = attributeModel.getB1AttributeName();
+				logDebug("attrName:  " + attrName);
+				for (atr in attributesMap) {
+					logDebug("atr: + " + atr);
+					if (attrName.equalsIgnoreCase(atr)) {
+						attributeModel.setB1AttributeValue(attributesMap[atr]);
+						changed = true;
+						break;
+					}//if match
+				}//for all in ValuesMap
+			}//for all attributes in scriptParcelModel
+			logDebug("changed: " + changed);
+			if (changed) {
+				//Update Parcel:
+				var capParcelModel = aa.parcel.getCapParcelModel().getOutput();
+				capParcelModel.setCapIDModel(itemCap);
+				capParcelModel.setParcelNo(parcelNo);
+				capParcelModel.setParcelModel(parcelScriptModel);
+				var updateResult = aa.parcel.updateDailyParcelWithAPOAttribute(capParcelModel);
+			}else{//changed
+				arrThisRecd = aa.parcel.getParcelandAttribute(capId, null);
+				if (arrThisRecd.getSuccess()) {
+					arrThisRecd = arrThisRecd.getOutput().toArray();
+					var tParcelScriptModel = arrThisRecd[p];
+					var tParcelNo = tParcelScriptModel.getParcelNumber();
+					//find parcel to update
+					var tAttributes = tParcelScriptModel.getParcelAttribute();
+					parcelScriptModel.setParcelAttribute(tAttributes);
+					var capParcelModel = aa.parcel.getCapParcelModel().getOutput();
+					capParcelModel.setCapIDModel(itemCap);
+					capParcelModel.setParcelNo(parcelNo);
+					capParcelModel.setParcelModel(parcelScriptModel);
+					var updateResult = aa.parcel.updateDailyParcelWithAPOAttribute(capParcelModel);
+					if(updateResult.getSuccess()){
+						logDebug("Parcel Attributes updated successfully");
+					}else{
+						logDebug("Error updating parcel attributes: " + updateResult.getErrorMessage());
+					}
+				}
+			}
+		}//for all parcels attached to record
+		return true;
+	} else {
+		logDebug("**INFO No parcels found for cap " + itemCap);
+		return false;
+	}
+	return false;
+}catch (err){
+	logDebug("A JavaScript Error occurred in updateParcelAttributes:  " + err.message);
+	logDebug(err.stack)
+}}
+
+
+
 //end corrected standard functions 
 
 
