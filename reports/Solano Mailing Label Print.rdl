@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="dsAA">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=13.59.160.178;Initial Catalog=SOLANOCO_CONV</ConnectString>
+      </ConnectionProperties>
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <rd:DataSourceID>7194c945-27bd-45b9-b363-f71317fa3e7d</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="dsLabel">
+      <Query>
+        <DataSourceName>dsAA</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@SetId">
+            <Value>=Parameters!SetId.Value</Value>
+            <rd:UserDefined>true</rd:UserDefined>
+          </QueryParameter>
+          <QueryParameter Name="@ContactType">
+            <Value>=Parameters!ContactType.Value</Value>
+            <rd:UserDefined>true</rd:UserDefined>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>;WITH G7ADDRESS AS (select e.SERV_PROV_CODE, e.REC_STATUS, e.B1_CONTACT_NBR, e.ENT_ID1
+					, ROW_NUMBER() over ( partition by e.B1_CONTACT_NBR order by IIF(e.PRIMARY_FLAG is NULL OR e.PRIMARY_FLAG = '' OR e.PRIMARY_FLAG = 'N','N','Y') DESC ) AS ROWNUM
+					FROM XRECORD_CONTACT_ENTITY e
+					WHERE e.SERV_PROV_CODE = 'SOLANOCO'
+					AND e.REC_STATUS = 'A'
+					AND e.ENT_TYPE &lt;&gt; 'REF_CONTACT')
+
+SELECT DISTINCT  b.SERV_PROV_CODE, b.B1_PER_ID1, b.B1_PER_ID2, b.B1_PER_ID3
+--,sd.SET_ID AS SET_ID
+,b.B1_ALT_ID AS RECORD_ID
+	, b.B1_SPECIAL_TEXT AS BUSINESS
+	, b.B1_APPL_STATUS_DATE AS STATUS_DATE
+	,c.B1_CONTACT_TYPE 
+	, c.B1_FNAME +' '+ (CASE WHEN c.B1_MNAME IS NOT NULL THEN c.B1_MNAME +' ' ELSE '' END)+ c.B1_LNAME AS NAME_FML
+	,g.G7_ADDRESS1 AS ADDRESS_1
+	,g.G7_ADDRESS2 AS ADDRESS_2
+    ,g.G7_ADDRESS3 AS ADDRESS_3
+	, g.G7_CITY AS CITY
+	,g.G7_STATE AS STATE1
+	,g.G7_ZIP AS ZIP
+	,g.G7_COUNTRY_CODE AS COUNTRY
+    , c.B1_EMAIL AS EMAIL, c.B1_PHONE1 AS PHONE
+  FROM B1PERMIT b
+--INNER JOIN @SETDETAILS1 sd 
+ INNER JOIN SETDETAILS sd 
+ON sd.SERV_PROV_CODE = b.SERV_PROV_CODE AND sd.REC_STATUS = b.REC_STATUS AND sd.B1_PER_ID1 = b.B1_PER_ID1 AND sd.B1_PER_ID2 = b.B1_PER_ID2 AND sd.B1_PER_ID3 = b.B1_PER_ID3
+	LEFT JOIN B3CONTACT c ON c.SERV_PROV_CODE = b.SERV_PROV_CODE AND c.REC_STATUS = b.REC_STATUS AND c.B1_PER_ID1 = b.B1_PER_ID1 AND c.B1_PER_ID2 = b.B1_PER_ID2 AND c.B1_PER_ID3 = b.B1_PER_ID3 
+    LEFT OUTER JOIN G7ADDRESS xce ON xce.SERV_PROV_CODE = c.SERV_PROV_CODE AND xce.REC_STATUS = c.REC_STATUS AND xce.B1_CONTACT_NBR = c.B1_CONTACT_NBR AND xce.ROWNUM=1
+	LEFT OUTER JOIN  G7CONTACT_ADDRESS g ON g.SERV_PROV_CODE = 'SOLANOCO' AND g.REC_STATUS = 'A'  AND g.G7_ADDRESS_TYPE = 'Mailing' AND g.RES_ID = xce.ENT_ID1
+WHERE b.SERV_PROV_CODE = 'SOLANOCO'
+AND b.REC_STATUS = 'A'
+AND sd.SET_ID = @SetId
+AND (  c.B1_CONTACT_TYPE = @ContactType or ISNULL(@ContactType ,'ALL') = 'ALL' OR IIF(@ContactType='','ALL',@ContactType) = 'ALL' )</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="SET_ID">
+          <DataField>SET_ID</DataField>
+          <rd:UserDefined>true</rd:UserDefined>
+        </Field>
+        <Field Name="SERV_PROV_CODE">
+          <DataField>SERV_PROV_CODE</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="B1_PER_ID1">
+          <DataField>B1_PER_ID1</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="B1_PER_ID2">
+          <DataField>B1_PER_ID2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RECORD_ID">
+          <DataField>RECORD_ID</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="B1_PER_ID3">
+          <DataField>B1_PER_ID3</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="BUSINESS">
+          <DataField>BUSINESS</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="STATUS_DATE">
+          <DataField>STATUS_DATE</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="B1_CONTACT_TYPE">
+          <DataField>B1_CONTACT_TYPE</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="NAME_FML">
+          <DataField>NAME_FML</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ADDRESS_1">
+          <DataField>ADDRESS_1</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ADDRESS_2">
+          <DataField>ADDRESS_2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ADDRESS_3">
+          <DataField>ADDRESS_3</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CITY">
+          <DataField>CITY</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="STATE1">
+          <DataField>STATE1</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ZIP">
+          <DataField>ZIP</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="COUNTRY">
+          <DataField>COUNTRY</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="EMAIL">
+          <DataField>EMAIL</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PHONE">
+          <DataField>PHONE</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Tablix1">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>2.48933in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>1in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox3">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!NAME_FML.Value &amp; vbCRLF &amp;
+Fields!ADDRESS_1.Value &amp; vbCRLF &amp;
+iif(Fields!ADDRESS_2.Value &lt;&gt; "", Fields!ADDRESS_2.Value &amp; vbCRLF &amp;
+Fields!CITY.Value &amp; ", " &amp; Fields!STATE1.Value &amp; " " &amp; Fields!ZIP.Value &amp;
+iif(Fields!COUNTRY.Value &lt;&gt; "",Fields!COUNTRY.Value,""),
+Fields!CITY.Value &amp; 
+iif(Fields!STATE1.Value &lt;&gt; "" , ",", iif(Fields!ZIP.Value &lt;&gt; "", ",", iif(Fields!COUNTRY.Value&lt;&gt; "",",","")))
+ &amp; Fields!STATE1.Value &amp; " " &amp;
+Fields!ZIP.Value &amp; " " &amp;
+iif(Fields!COUNTRY.Value &lt;&gt; "",iif(Fields!COUNTRY.Value = "US","",Fields!COUNTRY.Value),""))</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox3</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="Details" />
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>dsLabel</DataSetName>
+            <Height>1in</Height>
+            <Width>2.48933in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>1in</Height>
+        <Style />
+      </Body>
+      <Width>2.5935in</Width>
+      <Page>
+        <LeftMargin>0.21975in</LeftMargin>
+        <RightMargin>0.21975in</RightMargin>
+        <TopMargin>0.5in</TopMargin>
+        <BottomMargin>0.5in</BottomMargin>
+        <Columns>3</Columns>
+        <ColumnSpacing>0.14in</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="SetId">
+      <DataType>String</DataType>
+      <Prompt>Set Id</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="ContactType">
+      <DataType>String</DataType>
+      <Prompt>Contact Type</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>SetId</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ContactType</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>fd8a5778-d113-4667-b44f-8479f3d8dbc7</rd:ReportID>
+</Report>
