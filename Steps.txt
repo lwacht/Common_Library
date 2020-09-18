@@ -1,9 +1,0 @@
-1. Open script - "FEE_CONFIG - Create Table and INSERT Data Script"
-2. Change database name in Line 1, to new Database name.
-3. Execute script.
-4. Open script - "FEE_CONFIG_UPDATE_PROCESS"
-5. Change database name in Line 1, to new Database name.
-6. Execute script to create stored procedure and execute stored procedure with parameter P_FEE_INCREASE_PERCENTAGE = 2.9
-7. Open script - "RFEEITEM_UPDATE_PROCESS"
-8. Change database name in Line 1, to new Database name.
-9. Execute script to create stored procedure and execute stored procedure.
