@@ -259,7 +259,11 @@ try{
 				var arrType = cntType.split(",");
 				for(con in arrType){
 					var priContact = getContactObj(capId,arrType[con]);
+<<<<<<< Updated upstream
 					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail,respectPriChannel);
+=======
+					sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
+>>>>>>> Stashed changes
 				}
 			}else{
 				if(cntType.toUpperCase()=="ALL"){
@@ -331,6 +335,7 @@ try{
 	logDebug(err.stack);
 }}
 
+<<<<<<< Updated upstream
 function sepSchedInspectionWkfl(recdType, taskName, taskStatus, sInsGroup, sInsType, pendSched, asiField, asiValue, monthDays, whenSched, calWkgDay, inspectorId, addtlQuery) {
 try{
 	var appMatch = true;
@@ -536,6 +541,8 @@ try{
 	logDebug(err.stack);
 }}
 
+=======
+>>>>>>> Stashed changes
 function sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel){
 try{
 	useParCapForRpt = false;
@@ -1384,12 +1391,17 @@ try{
 														var arrType = cntType.split(",");
 														for(con in arrType){
 															var priContact = getContactObj(capId,arrType[con]);
+<<<<<<< Updated upstream
 															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N",true);
+=======
+															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
+>>>>>>> Stashed changes
 														}
 													}else{
 														if(cntType.toUpperCase()=="ALL"){
 															var arrType = getContactObjs(capId);
 															for(con in arrType){
+<<<<<<< Updated upstream
 																sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, "N",true);
 															}
 															var arrLPType = getLicensedProfessionalObjectsByRecord(capId);
@@ -1399,6 +1411,13 @@ try{
 														}else{
 															var priContact = getContactObj(capId,cntType);
 															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, "N",true);
+=======
+																sepProcessContactsForNotif(arrType[con], notName, rName, sysFromEmail, respectPriChannel);
+															}
+														}else{
+															var priContact = getContactObj(capId,cntType);
+															sepProcessContactsForNotif(priContact, notName, rName, sysFromEmail, respectPriChannel);
+>>>>>>> Stashed changes
 														}						
 													}						
 												}else{

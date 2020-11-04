@@ -63,11 +63,19 @@ function getMasterScriptText(vScriptName) {
 |
 /------------------------------------------------------------------------------------------------------*/
 /* test params */
+<<<<<<< Updated upstream
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Trk_Permit,Expired_Pumper_Trk,Delinquent_Pumper_Trk");
 aa.env.setValue("BatchJobID", "About_To_Expire_Small_Water");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pool");
+=======
+aa.env.setValue("ModuleName", "ALL");
+aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Trk_Permit,Expired_Pumper_Trk,Delinquent_Pumper_Trk");
+aa.env.setValue("BatchJobID", "About_To_Expire_Small_Water");
+aa.env.setValue("BatchJobID", "About_To_Expire_Pool");
+aa.env.setValue("BatchJobID", "ALL_BATCHES");
+>>>>>>> Stashed changes
 
 
 batchJobResult = aa.batchJob.getJobID()
@@ -290,8 +298,13 @@ try {
 function findSWADDLERecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
+<<<<<<< Updated upstream
 	//var modName = getJobParam("ModuleName"); 
 	var modName = "ALL";
+=======
+	var modName = getJobParam("ModuleName"); 
+	//var modName = "ALL";
+>>>>>>> Stashed changes
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", modName);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -783,3 +796,54 @@ function elapsed() {
 	var thisTime = thisDate.getTime();
 	return ((thisTime - startTime) / 1000)
 }
+<<<<<<< Updated upstream
+=======
+
+function resultWorkflowTask(wfstr, wfstat, wfcomment, wfnote) // optional process name
+{
+	var useProcess = false;
+	var processName = "";
+	if (arguments.length == 5) {
+		processName = arguments[4]; // subprocess
+		useProcess = true;
+	}
+
+	var workflowResult = aa.workflow.getTaskItems(capId, wfstr, processName, null, null, null);
+	if (workflowResult.getSuccess())
+		var wfObj = workflowResult.getOutput();
+	else {
+		logMessage("**ERROR: Failed to get workflow object: " + workflowResult.getErrorMessage());
+		return false;
+	}
+
+	if (!wfstat)
+		wfstat = "NA";
+
+	for (i in wfObj) {
+		var fTask = wfObj[i];
+		if (fTask.getTaskDescription().toUpperCase().equals(wfstr.toUpperCase()) && (!useProcess || fTask.getProcessCode().equals(processName))) {
+			var statObj = aa.workflow.getTaskStatus(fTask, wfstat);
+			var dispo = "U";
+			if (statObj.getSuccess()) {
+				var status = statObj.getOutput();
+				dispo = status.getResultAction();
+			} else {
+				logDebug("Could not get status action resulting to no change")
+			}
+
+			var dispositionDate = aa.date.getCurrentDate();
+			var stepnumber = fTask.getStepNumber();
+			var processID = fTask.getProcessID();
+
+			if (useProcess)
+				aa.workflow.handleDisposition(capId, stepnumber, processID, wfstat, dispositionDate, wfnote, wfcomment, systemUserObj, dispo);
+			else
+				aa.workflow.handleDisposition(capId, stepnumber, wfstat, dispositionDate, wfnote, wfcomment, systemUserObj, dispo);
+
+			logMessage("Resulting Workflow Task: " + wfstr + " with status " + wfstat);
+			logDebug("Resulting Workflow Task: " + wfstr + " with status " + wfstat);
+		}
+	}
+}
+
+>>>>>>> Stashed changes
