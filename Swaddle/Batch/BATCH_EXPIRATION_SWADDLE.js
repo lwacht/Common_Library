@@ -63,19 +63,16 @@ function getMasterScriptText(vScriptName) {
 |
 /------------------------------------------------------------------------------------------------------*/
 /* test params */
-<<<<<<< Updated upstream
 aa.env.setValue("ModuleName", "EnvHealth");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Trk_Permit,Expired_Pumper_Trk,Delinquent_Pumper_Trk");
 aa.env.setValue("BatchJobID", "About_To_Expire_Small_Water");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pool");
-=======
 aa.env.setValue("ModuleName", "ALL");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pumper_Trk_Permit,Expired_Pumper_Trk,Delinquent_Pumper_Trk");
 aa.env.setValue("BatchJobID", "About_To_Expire_Small_Water");
 aa.env.setValue("BatchJobID", "About_To_Expire_Pool");
 aa.env.setValue("BatchJobID", "ALL_BATCHES");
->>>>>>> Stashed changes
 
 
 batchJobResult = aa.batchJob.getJobID()
@@ -298,13 +295,10 @@ try {
 function findSWADDLERecsToProcess(){
 try{
 	//see if any records are set up--module can be specific or "ALL", look for both
-<<<<<<< Updated upstream
 	//var modName = getJobParam("ModuleName"); 
 	var modName = "ALL";
-=======
 	var modName = getJobParam("ModuleName"); 
 	//var modName = "ALL";
->>>>>>> Stashed changes
 	var sepScriptConfig = aa.cap.getCapIDsByAppSpecificInfoField("Module Name", modName);
 	if(sepScriptConfig.getSuccess()){
 		var sepScriptConfigArr = sepScriptConfig.getOutput();
@@ -796,8 +790,6 @@ function elapsed() {
 	var thisTime = thisDate.getTime();
 	return ((thisTime - startTime) / 1000)
 }
-<<<<<<< Updated upstream
-=======
 
 function resultWorkflowTask(wfstr, wfstat, wfcomment, wfnote) // optional process name
 {
@@ -846,4 +838,3 @@ function resultWorkflowTask(wfstr, wfstat, wfcomment, wfnote) // optional proces
 	}
 }
 
->>>>>>> Stashed changes
